@@ -4,9 +4,17 @@
 #'
 #' @section Functions:
 #'
-#' Below are listed some of the functions available in \code{elo}:
+#' Listed below are the most useful functions available in \code{elo}:
 #'
-#' \code{\link{elo.calc}}: Calculate Elos for a series of matches.
+#' \code{\link{elo.prob}}: Calculate the probability that team A beats team B.
+#'
+#' \code{\link{elo.update}}: Calculate the update value for a given Elo matchup.
+#'
+#' \code{\link{elo.calc}}: Calculate post-update Elo values.
+#'
+#' \code{\link{elo.run}}: Calculate Elos for a series of matches.
+#'
+#' \code{\link{score}}: Create a 1/0/0.5 win "indicator" based on two teams' scores.
 #'
 #' @section Data:
 #'
@@ -15,6 +23,9 @@
 #' @examples
 #' library(elo)
 #' @references Elo, A. E. 1978. The Rating of Chess Players, Past and Present. New York: Arco.
+#'
+#' @importFrom stats predict fitted residuals
+#' @importFrom pROC auc
 #' @docType package
 #' @name elo
 #'

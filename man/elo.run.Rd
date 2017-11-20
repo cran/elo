@@ -4,14 +4,18 @@
 \alias{elo.run}
 \alias{elo.run}
 \alias{print.elo.run}
+\alias{print.elo.run.regressed}
 \title{Calculate Elos for a series of matches}
 \usage{
-elo.run(formula, data, na.action, subset, k = NULL, initial.elo = NULL, ...)
+elo.run(formula, data, na.action, subset, k = NULL, initial.elos = NULL,
+  ...)
 
 \method{print}{elo.run}(x, ...)
+
+\method{print}{elo.run.regressed}(x, ...)
 }
 \arguments{
-\item{formula}{A formula. See "details", below.}
+\item{formula}{A formula. See the "details" section of \code{\link{elo.model.frame}}.}
 
 \item{data}{A \code{data.frame} in which to look for objects in \code{formula}.}
 
@@ -19,33 +23,19 @@ elo.run(formula, data, na.action, subset, k = NULL, initial.elo = NULL, ...)
 
 \item{subset}{An optional vector specifying a subset of observations.}
 
-\item{k}{A constant k-value. See "details", below.}
+\item{k}{A constant k-value (or a vector, where appropriate).}
 
-\item{initial.elo}{An optional named vector containing initial Elo ratings for all teams in \code{formula}.}
+\item{initial.elos}{An optional named vector containing initial Elo ratings for all teams in \code{formula}.}
 
 \item{...}{Other arguments (not used at this time).}
 
-\item{x}{An object of class \code{"elo.run"}.}
+\item{x}{An object of class \code{"elo.run"} or class \code{"elo.run.regressed"}.}
 }
 \value{
-An object of class \code{"elo.run"}.
+An object of class \code{"elo.run"} or class \code{"elo.run.regressed"}.
 }
 \description{
 Calculate Elos for a series of matches.
-}
-\details{
-\code{formula} is usually of the form \code{wins.A ~ team.A + team.B}, where \code{team.A} and \code{team.B}
-  are character vectors or factors denoting which two teams played, and \code{wins.A} is between 0 and 1,
-  denoting whether team A won or lost (or something between).
-
-It is also acceptable for either \code{team.A} or \code{team.B} to be a numeric column (if, for example,
-  the Elo of one team or the other is known or fixed). If both are numeric, a warning will be issued,
-  and results will be calculated using \code{\link{elo.calc}}.
-
-\code{formula} accepts two special functions in it. \code{k()} allows for complicated Elo updates. For
-  constant Elo updates, use the \code{k = } argument instead of this special function.
-  \code{adjust()} allows for Elos to be adjusted for, e.g., home-field advantage. The second argument
-  to this function can be a scalar or vector of appropriate length. See the examples.
 }
 \examples{
 data(tournament)
@@ -57,14 +47,19 @@ elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor +
         k(20*log(abs(points.Home - points.Visitor) + 1)), data = tournament)
 
 # Adjust Elo for, e.g., home-field advantage
-elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 10) + team.Visitor,
+elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 30) + team.Visitor,
         data = tournament, k = 20)
 
-tournament$home.field <- 10
+tournament$home.field <- 30
 elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, home.field) + team.Visitor,
         data = tournament, k = 20)
 
+# Regress the Elos back toward 1500 at the end of the half-season
+elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 30) +
+        team.Visitor + regress(half, 1500, 0.2), data = tournament, k = 20)
+
 }
 \seealso{
-\code{\link{elo.run}}
+\code{\link{score}}, \code{\link{elo.calc}}, \code{\link{elo.update}}, \code{\link{elo.prob}},
+  \code{elo.model.frame}, \link{elo.run.helpers}{elo.run helpers}.
 }

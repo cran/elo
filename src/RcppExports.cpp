@@ -5,9 +5,37 @@
 
 using namespace Rcpp;
 
+// eloRunAsMatrix
+NumericMatrix eloRunAsMatrix(NumericMatrix mat, NumericVector initialElos, LogicalVector group);
+RcppExport SEXP _elo_eloRunAsMatrix(SEXP matSEXP, SEXP initialElosSEXP, SEXP groupSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type initialElos(initialElosSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type group(groupSEXP);
+    rcpp_result_gen = Rcpp::wrap(eloRunAsMatrix(mat, initialElos, group));
+    return rcpp_result_gen;
+END_RCPP
+}
+// eloRunRegressedAsMatrix
+NumericMatrix eloRunRegressedAsMatrix(NumericMatrix mat, NumericVector initialElos, NumericMatrix regMat, LogicalVector regress, LogicalVector group);
+RcppExport SEXP _elo_eloRunRegressedAsMatrix(SEXP matSEXP, SEXP initialElosSEXP, SEXP regMatSEXP, SEXP regressSEXP, SEXP groupSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type initialElos(initialElosSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type regMat(regMatSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type regress(regressSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type group(groupSEXP);
+    rcpp_result_gen = Rcpp::wrap(eloRunRegressedAsMatrix(mat, initialElos, regMat, regress, group));
+    return rcpp_result_gen;
+END_RCPP
+}
 // eloRun
-NumericMatrix eloRun(NumericVector teamA, NumericVector teamB, NumericVector winsA, NumericVector k, NumericVector adjTeamA, NumericVector adjTeamB, NumericVector initialElo, int flag);
-RcppExport SEXP _elo_eloRun(SEXP teamASEXP, SEXP teamBSEXP, SEXP winsASEXP, SEXP kSEXP, SEXP adjTeamASEXP, SEXP adjTeamBSEXP, SEXP initialEloSEXP, SEXP flagSEXP) {
+List eloRun(NumericVector teamA, NumericVector teamB, NumericVector winsA, NumericVector k, NumericVector adjTeamA, NumericVector adjTeamB, LogicalVector regress, double to, double by, NumericVector initialElos, int flag);
+RcppExport SEXP _elo_eloRun(SEXP teamASEXP, SEXP teamBSEXP, SEXP winsASEXP, SEXP kSEXP, SEXP adjTeamASEXP, SEXP adjTeamBSEXP, SEXP regressSEXP, SEXP toSEXP, SEXP bySEXP, SEXP initialElosSEXP, SEXP flagSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,27 +45,33 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< NumericVector >::type k(kSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type adjTeamA(adjTeamASEXP);
     Rcpp::traits::input_parameter< NumericVector >::type adjTeamB(adjTeamBSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type initialElo(initialEloSEXP);
+    Rcpp::traits::input_parameter< LogicalVector >::type regress(regressSEXP);
+    Rcpp::traits::input_parameter< double >::type to(toSEXP);
+    Rcpp::traits::input_parameter< double >::type by(bySEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type initialElos(initialElosSEXP);
     Rcpp::traits::input_parameter< int >::type flag(flagSEXP);
-    rcpp_result_gen = Rcpp::wrap(eloRun(teamA, teamB, winsA, k, adjTeamA, adjTeamB, initialElo, flag));
+    rcpp_result_gen = Rcpp::wrap(eloRun(teamA, teamB, winsA, k, adjTeamA, adjTeamB, regress, to, by, initialElos, flag));
     return rcpp_result_gen;
 END_RCPP
 }
-// eloRunAsMatrix
-NumericMatrix eloRunAsMatrix(NumericMatrix mat);
-RcppExport SEXP _elo_eloRunAsMatrix(SEXP matSEXP) {
+// finalElos
+NumericVector finalElos(NumericMatrix mat, int nTeams);
+RcppExport SEXP _elo_finalElos(SEXP matSEXP, SEXP nTeamsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericMatrix >::type mat(matSEXP);
-    rcpp_result_gen = Rcpp::wrap(eloRunAsMatrix(mat));
+    Rcpp::traits::input_parameter< int >::type nTeams(nTeamsSEXP);
+    rcpp_result_gen = Rcpp::wrap(finalElos(mat, nTeams));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_elo_eloRun", (DL_FUNC) &_elo_eloRun, 8},
-    {"_elo_eloRunAsMatrix", (DL_FUNC) &_elo_eloRunAsMatrix, 1},
+    {"_elo_eloRunAsMatrix", (DL_FUNC) &_elo_eloRunAsMatrix, 3},
+    {"_elo_eloRunRegressedAsMatrix", (DL_FUNC) &_elo_eloRunRegressedAsMatrix, 5},
+    {"_elo_eloRun", (DL_FUNC) &_elo_eloRun, 11},
+    {"_elo_finalElos", (DL_FUNC) &_elo_finalElos, 2},
     {NULL, NULL, 0}
 };
 

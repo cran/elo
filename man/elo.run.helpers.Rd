@@ -3,41 +3,55 @@
 \name{elo.run.helpers}
 \alias{elo.run.helpers}
 \alias{as.matrix.elo.run}
+\alias{as.matrix.elo.run.regressed}
 \alias{as.data.frame.elo.run}
-\alias{last}
-\alias{last.elo.run}
+\alias{final.elos}
+\alias{final.elos.elo.run}
+\alias{final.elos.elo.run.regressed}
 \title{Helper functions for \code{elo.run}}
 \usage{
-\method{as.matrix}{elo.run}(x, ...)
+\method{as.matrix}{elo.run}(x, ..., group = x$group)
+
+\method{as.matrix}{elo.run.regressed}(x, ..., group = x$group)
 
 \method{as.data.frame}{elo.run}(x, ...)
 
-last(x, ...)
+final.elos(x, ...)
 
-\method{last}{elo.run}(x, ...)
+\method{final.elos}{elo.run}(x, ...)
+
+\method{final.elos}{elo.run.regressed}(x, regressed = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"elo.run"}.}
+\item{x}{An object of class \code{"elo.run"} or class \code{"elo.run.regressed"}.}
 
 \item{...}{Other arguments (Not in use at this time).}
+
+\item{group}{A grouping vector, telling which rows to output in the matrix.}
+
+\item{regressed}{Logical, denoting whether to use the post-regressed (\code{TRUE}) or
+pre-regressed (\code{FALSE}) final Elos. Note that \code{TRUE} only makes sense when the
+final Elos were regressed one last time (i.e., if the last element of the \code{regress()})
+vector yields \code{TRUE}).}
 }
 \value{
 A matrix, a data.frame, or a named vector.
 }
 \description{
-\code{as.matrix.elo.run} converts an object from \code{\link{elo.run}} into a matrix of running Elos.
+\code{as.matrix} converts an Elo object into a matrix of running Elos.
 }
 \details{
-\code{as.data.frame.elo.run} converts the \code{"elos"} component of an object from \code{\link{elo.run}} into a data.frame.
+\code{as.data.frame} converts the \code{"elos"} component of an object
+  from \code{\link{elo.run}} into a data.frame.
 
-\code{last} is a generic function, whose \code{\link{elo.run}} method extracts the last Elo per team.
+\code{final.elos} is a generic function to extract the last Elo per team.
 }
 \examples{
-e <- elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor,
+e <- elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor + group(week),
              data = tournament, k = 20)
 head(as.matrix(e))
 str(as.data.frame(e))
-last(e)
+final.elos(e)
 }
 \seealso{
 \code{\link{elo.run}}

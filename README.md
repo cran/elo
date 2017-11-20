@@ -1,5 +1,6 @@
 
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/elo)](https://cran.r-project.org/package=elo)
+[![Total Downloads](http://cranlogs.r-pkg.org/badges/grand-total/elo)](https://cran.r-project.org/package=elo)
 [![Downloads](http://cranlogs.r-pkg.org/badges/elo)](https://cran.r-project.org/package=elo)
 [![Travis-CI Build Status](https://travis-ci.org/eheinzen/elo.svg?branch=master)](https://travis-ci.org/eheinzen/elo)
 
@@ -12,7 +13,7 @@ The `elo` package includes functions to address all kinds of Elo calculations.
 library(elo)
 ```
 
-Please see the vignette for examples.
+Please see the vignette for examples. Note that v1.0.0 is very much not backwards-compatible.
 
 # Naming Schema
 
