@@ -27,7 +27,7 @@ NumericVector eloRegress(NumericVector eloA, double to, double by, LogicalVector
 // [[Rcpp::export]]
 List eloRun(NumericVector teamA, NumericVector teamB, NumericVector winsA,
                      NumericVector k, NumericVector adjTeamA, NumericVector adjTeamB,
-                     LogicalVector regress, double to, double by,
+                     LogicalVector regress, double to, double by, bool regressUnused,
                      NumericVector initialElos, int flag)
 {
   // this function uses 0-based indexing, since the incoming vectors used -1L
@@ -37,7 +37,7 @@ List eloRun(NumericVector teamA, NumericVector teamB, NumericVector winsA,
 
   NumericVector currElo(nTeams);
   LogicalVector usedYet(nTeams);
-  currElo = initialElos;
+  currElo = clone(initialElos);
 
   NumericMatrix out(nGames, 7);
   NumericMatrix regOut(nRegress, nTeams);
@@ -87,6 +87,13 @@ List eloRun(NumericVector teamA, NumericVector teamB, NumericVector winsA,
       currElo = eloRegress(currElo, to, by, usedYet);
       regOut(regRow, _) = currElo;
       regRow++;
+      if(!regressUnused)
+      {
+        for(int k = 0; k < nTeams; k++)
+        {
+          usedYet[k] = false;
+        }
+      }
     }
   }
 

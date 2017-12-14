@@ -1,7 +1,7 @@
 Package: elo
 Title: Elo Ratings
-Version: 1.0.0
-Date: 2017-11-19
+Version: 1.0.1
+Date: 2017-12-14
 Authors@R: c(
     person("Ethan", "Heinzen", email = "heinzen.ethan@mayo.edu", role = c("aut", "cre"))
   )
@@ -22,8 +22,8 @@ RoxygenNote: 6.0.1
 LazyData: true
 LinkingTo: Rcpp
 NeedsCompilation: yes
-Packaged: 2017-11-20 01:58:16 UTC; m144326
+Packaged: 2017-12-14 15:29:56 UTC; m144326
 Author: Ethan Heinzen [aut, cre]
 Maintainer: Ethan Heinzen <heinzen.ethan@mayo.edu>
 Repository: CRAN
-Date/Publication: 2017-11-20 11:46:49 UTC
+Date/Publication: 2017-12-14 16:13:29 UTC
