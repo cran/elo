@@ -3,7 +3,7 @@
 #'
 #' A helper function to create the \code{model.frame} for many \code{elo} functions.
 #'
-#' @param formula A formula. See "details", below.
+#' @param formula A formula. See \link[=formula.specials]{the help page for formulas} for details.
 #' @param data A \code{data.frame} in which to look for objects in \code{formula}.
 #' @param na.action A function which indicates what should happen when the data contain NAs.
 #' @param subset An optional vector specifying a subset of observations.
@@ -11,34 +11,6 @@
 #' @param ... Other arguments (not in use at this time).
 #' @param required.vars One or more of \code{c("wins", "elos", "k", "group", "regress")},
 #'   denoting which variables are required to appear in the final model.frame.
-#' @details
-#' \code{formula} is usually of the form \code{wins.A ~ elo.A + elo.B}, where \code{elo.A} and \code{elo.B}
-#'   are vectors of Elos, and \code{wins.A} is between 0 and 1,
-#'   denoting whether team A (Elo A) won or lost (or something between). \code{elo.prob} also allows
-#'   \code{elo.A} and \code{elo.B} to be character or factors, denoting which team(s) played. \code{elo.run}
-#'   requires \code{elo.A} to be a vector of teams (sometimes denoted by \code{"team.A"}),
-#'   but \code{elo.B} can be either a vector of teams or  else a numeric column
-#'   (denoting a fixed-Elo opponent).
-#'
-#' \code{formula} accepts four special functions in it:
-#'
-#' \code{k()} allows for complicated Elo updates. For
-#'   constant Elo updates, use the \code{k = } argument instead of this special function.
-#'
-#' \code{adjust()} allows for Elos to be adjusted for, e.g., home-field advantage. The second argument
-#'   to this function can be a scalar or vector of appropriate length.
-#'
-#' \code{regress()} can be used to regress Elos back to a fixed value
-#'   after certain matches. Giving a logical vector identifies these matches after which to
-#'   regress back to the mean. Giving any other kind of vector regresses after the appropriate
-#'   groupings (see, e.g., \code{\link{duplicated}(..., fromLast = TRUE)}). The other three arguments determine
-#'   what Elo to regress to (\code{to = }), by how much to regress toward that value
-#'   (\code{by = }), and whether to continue regressing teams which have stopped playing (\code{regress.unused},
-#'   default = \code{TRUE}).
-#'
-#' \code{group()} is used to group matches (by, e.g., week). It is fed to \code{\link{as.matrix.elo.run}}
-#'   to produce only certain rows of matrix output.
-#'
 #' @seealso \code{\link{elo.run}}, \code{\link{elo.calc}}, \code{\link{elo.update}}, \code{\link{elo.prob}}
 #' @export
 elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., required.vars = "elos")
@@ -50,56 +22,15 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
 
   temp.call <- Call[c(1, indx)]
   temp.call[[1L]] <- quote(stats::model.frame)
-  specials <- c("adjust", "k", "group", "regress")
+  specials <- c("adjust", "k", "group", "regress", "players")
 
   temp.call$formula <- if(missing(data))
   {
     stats::terms(formula, specials)
   } else stats::terms(formula, specials, data = data)
 
-  adjenv <- new.env(parent = environment(formula))
-  if(!is.null(attr(temp.call$formula, "specials")$adjust))
-  {
-    assign("adjust", function(x, y) {
-      if(length(y) == 1)
-      {
-        attr(x, "adjust") <- rep(y, times = length(x))
-      } else if(length(y) == length(x))
-      {
-        attr(x, "adjust") <- y
-      } else stop("The second argument to 'adjust' needs to be length 1 or the same length as the first argument.")
-
-      class(x) <- c("adjustedElo", class(x))
-      x
-    }, envir = adjenv)
-  }
-  if(!is.null(attr(temp.call$formula, "specials")$k))
-  {
-    assign("k", function(x) x, envir = adjenv)
-  }
-  if(!is.null(attr(temp.call$formula, "specials")$group))
-  {
-    assign("group", function(x) x, envir = adjenv)
-  }
-  if(!is.null(attr(temp.call$formula, "specials")$regress))
-  {
-    assign("regress", function(x, to, by, regress.unused = TRUE) {
-      if(!is.numeric(to) || length(to) != 1 || anyNA(to)) stop("regress: 'to' must be numeric.")
-      if(!is.numeric(by) || length(by) != 1 || anyNA(by) || by > 1 || by < 0)
-        stop("regress: 'by' must be 0 <= by <= 1")
-      if(!is.logical(regress.unused) || length(regress.unused) != 1 || anyNA(regress.unused))
-        stop("regress: 'regress.unused' must be a single logical value.")
-      attr(x, "to") <- to
-      attr(x, "by") <- by
-      attr(x, "regress.unused") <- regress.unused
-      class(x) <- c("regressElo", class(x))
-      x
-    }, envir = adjenv)
-  }
-  environment(temp.call$formula) <- adjenv
-
   mf <- eval(temp.call, parent.frame())
-    if(nrow(mf) == 0) stop("No (non-missing) observations")
+  if(nrow(mf) == 0) stop("No (non-missing) observations")
 
   Terms <- stats::terms(mf)
 
@@ -144,10 +75,9 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
 
   #####################################################################
 
-  out <- data.frame(
-    elo.A = remove_adjustedElo(mf[[elo.cols[1]]]),
-    elo.B = remove_adjustedElo(mf[[elo.cols[2]]])
-  )
+  out <- data.frame(row.names = 1:nrow(mf)) # in case one of the next two lines is a matrix
+  out$elo.A <- remove_elo_adjust(mf[[elo.cols[1]]])
+  out$elo.B <- remove_elo_adjust(mf[[elo.cols[2]]])
 
   if("wins" %in% required.vars) out$wins.A <- validate_score(as.numeric(mf[[1]]))
   if("k" %in% required.vars)
@@ -161,13 +91,10 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
   }
   if("regress" %in% required.vars)
   {
-    out$regress <- if(null_or_length0(reg.col)) FALSE else mf[[reg.col]]
-    if(null_or_length0(reg.col))
+    out$regress <- if(null_or_length0(reg.col))
     {
-      attr(out$regress, "to") <- 1500
-      attr(out$regress, "by") <- 0
-      attr(out$regress, "regress.unused") <- FALSE
-    }
+      regress(rep(FALSE, times = nrow(out)), 1500, 0, FALSE)
+    } else mf[[reg.col]]
   }
 
   adjs <- attr(Terms, "specials")$adjust
@@ -178,5 +105,5 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
 
   attr(out, "terms") <- Terms
 
-  return(out)
+  out
 }

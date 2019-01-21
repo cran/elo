@@ -2,20 +2,19 @@
 % Please edit documentation in R/elo.run.R
 \name{elo.run}
 \alias{elo.run}
-\alias{elo.run}
 \alias{print.elo.run}
 \alias{print.elo.run.regressed}
-\title{Calculate Elos for a series of matches}
+\title{\code{elo.run}}
 \usage{
-elo.run(formula, data, na.action, subset, k = NULL, initial.elos = NULL,
-  ...)
+elo.run(formula, data, na.action, subset, k = NULL,
+  initial.elos = NULL, ...)
 
 \method{print}{elo.run}(x, ...)
 
 \method{print}{elo.run.regressed}(x, ...)
 }
 \arguments{
-\item{formula}{A formula. See the "details" section of \code{\link{elo.model.frame}}.}
+\item{formula}{A formula. See \link[=formula.specials]{the help page for formulas} for details.}
 
 \item{data}{A \code{data.frame} in which to look for objects in \code{formula}.}
 
@@ -61,5 +60,5 @@ elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 30) +
 }
 \seealso{
 \code{\link{score}}, \code{\link{elo.calc}}, \code{\link{elo.update}}, \code{\link{elo.prob}},
-  \code{elo.model.frame}, \link{elo.run.helpers}{elo.run helpers}.
+  \code{\link{elo.model.frame}}, \link{elo.run.helpers}{elo.run helpers}.
 }

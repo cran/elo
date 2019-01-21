@@ -12,7 +12,7 @@
 
 <meta name="author" content="Ethan Heinzen" />
 
-<meta name="date" content="2017-12-14" />
+<meta name="date" content="2019-01-20" />
 
 <title>The elo Package</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">The ‘elo’ Package</h1>
 <h4 class="author"><em>Ethan Heinzen</em></h4>
-<h4 class="date"><em>2017-12-14</em></h4>
+<h4 class="date"><em>2019-01-20</em></h4>
 
 
 <div id="TOC">
@@ -167,7 +167,7 @@ elo.B &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1
 </div>
 <div id="regress-elos-back-to-the-mean" class="section level2">
 <h2>Regress Elos back to the mean</h2>
-<p>The special function <code>regress()</code> can be used to regress Elos back to a fixed value after certain matches. Giving a logical vector identifies these matches after which to regress back to the mean. Giving any other kind of vector regresses after the appropriate groupings (see, e.g., <code>duplicated(..., fromLast = TRUE)</code>). The other two arguments determine what Elo to regress to (<code>to =</code>), and by how much to regress toward that value (<code>by =</code>).</p>
+<p>The special function <code>regress()</code> can be used to regress Elos back to a fixed value after certain matches. Giving a logical vector identifies these matches after which to regress back to the mean. Giving any other kind of vector regresses after the appropriate groupings (see, e.g., <code>duplicated(..., fromLast = TRUE)</code>). The other three arguments determine what Elo to regress to (<code>to =</code>, which could be a different value for different teams), by how much to regress toward that value (<code>by =</code>), and whether to regress teams which aren’t actively playing (<code>regress.unused =</code>).</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">tournament<span class="op">$</span>elo.Visitor &lt;-<span class="st"> </span><span class="dv">1500</span>
 <span class="kw">elo.run</span>(<span class="kw">score</span>(points.Home, points.Visitor) <span class="op">~</span><span class="st"> </span>team.Home <span class="op">+</span><span class="st"> </span>elo.Visitor <span class="op">+</span>
 <span class="st">        </span><span class="kw">regress</span>(half, <span class="dv">1500</span>, <span class="fl">0.2</span>),
@@ -194,8 +194,9 @@ elo.B &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">1
 ## Favored Teams vs. Actual Wins: 
 ##        Actual
 ## Favored  0 0.5  1
-##   TRUE  16   5 35
-##   FALSE  0   0  0</code></pre>
+##   TRUE   6   1 16
+##   (tie)  2   1  9
+##   FALSE  8   3 10</code></pre>
 <p><code>as.matrix.elo.run()</code> creates a matrix of running Elos.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">head</span>(<span class="kw">as.matrix</span>(e))</code></pre></div>
 <pre><code>##      Athletic Armadillos Blundering Baboons Cunning Cats Defense-less Dogs

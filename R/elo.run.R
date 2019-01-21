@@ -1,5 +1,5 @@
 
-#' Calculate Elos for a series of matches
+#' \code{elo.run}
 #'
 #' Calculate Elos for a series of matches.
 #'
@@ -30,7 +30,7 @@
 #'         team.Visitor + regress(half, 1500, 0.2), data = tournament, k = 20)
 #'
 #' @seealso \code{\link{score}}, \code{\link{elo.calc}}, \code{\link{elo.update}}, \code{\link{elo.prob}},
-#'   \code{elo.model.frame}, \link{elo.run.helpers}{elo.run helpers}.
+#'   \code{\link{elo.model.frame}}, \link{elo.run.helpers}{elo.run helpers}.
 #' @name elo.run
 NULL
 #> NULL
@@ -40,29 +40,25 @@ NULL
 elo.run <- function(formula, data, na.action, subset, k = NULL, initial.elos = NULL, ...)
 {
   Call <- match.call()
-  Call[[1L]] <- quote(elo.model.frame)
+  Call[[1L]] <- quote(elo::elo.model.frame)
   Call$required.vars <- c("wins", "elos", "k", "group", "regress")
   mf <- eval(Call, parent.frame())
   Terms <- stats::terms(mf)
 
   checked <- check_elo_run_vars(mf, initial.elos)
+  out <- do.call(eloRun, checked)
+  any.regr <- any(checked$regress)
 
-  regr <- check_group_regress(mf$regress)
-  out <- eloRun(checked$team.A, checked$team.B, checked$wins.A,
-                checked$k, checked$adj.A, checked$adj.B,
-                regr, attr(mf$regress, "to"), attr(mf$regress, "by"),
-                attr(mf$regress, "regress.unused"), checked$initial.elos, checked$flag)
-  any.regr <- any(regr)
-
-  return(structure(list(
+  structure(list(
     elos = out[[1]],
-    initial.elos = checked$initial.elos,
+    n.players = c(ncol(checked$teamA), ncol(checked$teamB)),
+    initial.elos = checked$initialElos,
     elos.regressed = if(any.regr) out[[2]] else NULL,
-    teams = names(checked$initial.elos),
+    teams = names(checked$initialElos),
     group = mf$group,
     regress = if(any.regr) mf$regress else NULL,
     terms = Terms
-  ), class = c(if(any.regr) "elo.run.regressed", "elo.run")))
+  ), class = c(if(any.regr) "elo.run.regressed", "elo.run"))
 }
 
 #' @rdname elo.run

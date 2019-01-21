@@ -2,7 +2,6 @@
 % Please edit documentation in R/elo.update.R
 \name{elo.update}
 \alias{elo.update}
-\alias{elo.update}
 \alias{elo.update.default}
 \alias{elo.update.formula}
 \title{Elo functions}
@@ -12,7 +11,8 @@ elo.update(wins.A, ...)
 \method{elo.update}{default}(wins.A, elo.A, elo.B, k, ..., adjust.A = 0,
   adjust.B = 0)
 
-\method{elo.update}{formula}(formula, data, na.action, subset, k = NULL, ...)
+\method{elo.update}{formula}(formula, data, na.action, subset, k = NULL,
+  ...)
 }
 \arguments{
 \item{wins.A}{Numeric vector of wins by team A.}
@@ -29,7 +29,7 @@ elo.update(wins.A, ...)
 
 \item{adjust.B}{Numeric vectors to adjust \code{elo.A} and \code{elo.B} by.}
 
-\item{formula}{A formula. See the "details" section of \code{\link{elo.model.frame}}.}
+\item{formula}{A formula. See \link[=formula.specials]{the help page for formulas} for details.}
 
 \item{data}{A \code{data.frame} in which to look for objects in \code{formula}.}
 

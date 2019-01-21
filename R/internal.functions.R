@@ -1,61 +1,51 @@
 
-#' @export
-"[.adjustedElo" <- function(x, i)
-{
-  out <- NextMethod()
-  attr(out, "adjust") <- if(!missing(i)) attr(x, "adjust")[i] else attr(x, "adjust")
-  out
-}
-
-remove_adjustedElo <- function(x)
-{
-  class(x) <- class(x)[!(class(x) %in% "adjustedElo")]
-  attr(x, "adjust") <- NULL
-  x
-}
-
-#' @export
-"[.regressElo" <- function(x, i)
-{
-  out <- NextMethod()
-  attr(out, "to") <- attr(x, "to")
-  attr(out, "by") <- attr(x, "by")
-  attr(out, "regress.unused") <- attr(x, "regress.unused")
-  out
-}
-
 check_elo_run_vars <- function(mf, initial.elos = NULL)
 {
   t1 <- mf$elo.A
   t2 <- mf$elo.B
 
   if(is.numeric(t1)) stop("team.A shouldn't be numeric (team.B can be, though!)")
-  all.teams <- t1 <- as.character(t1)
+  if(!is.players(t1)) t1 <- players(t1)
   if(anyNA(t1)) stop("NAs were found in team.A; check that it can be coerced to character.")
+  all.teams <- as.character(t1)
+  wts1 <- weights(t1)
+
+  flag <- 2L*is.numeric(t2) # now either 2 or 0
   if(!is.numeric(t2))
   {
-    t2 <- as.character(t2)
+    if(!is.players(t2)) t2 <- players(t2)
     if(anyNA(t2)) stop("NAs were found in team.B; check that it can be coerced to character.")
-    all.teams <- c(all.teams, t2)
+    all.teams <- c(all.teams, as.character(t2))
+    wts2 <- weights(t2)
+  } else
+  {
+    t2 <- matrix(t2, ncol = 1)
+    wts2 <- 1
   }
-  flag <- is.numeric(t1) + 2L*is.numeric(t2) # now either 2 or 0
 
   all.teams <- sort(unique(all.teams))
-  initial.elos <- check_initial_elos(initial.elos, all.teams)
+  initial.elos <- check_named_elos(initial.elos, all.teams)
 
-  t1 <- as.integer(factor(t1, levels = names(initial.elos))) - 1L
-  if(flag != 2) t2 <- as.integer(factor(t2, levels = names(initial.elos))) - 1L
+  regress <- check_group_regress(mf$regress)
+  to <- check_named_elos(attr(mf$regress, "to"), all.teams)
 
-  return(list(wins.A = mf$wins.A, team.A = t1, team.B = t2, k = mf$k,
-              adj.A = mf$adj.A, adj.B = mf$adj.B,
-              initial.elos = initial.elos, flag = flag))
+  tmp <- stats::setNames(seq_along(initial.elos) - 1L, names(initial.elos))
+  t1 <- matrix(tmp[t1], nrow = nrow(t1))
+  if(flag != 2) t2 <- matrix(tmp[t2], nrow = nrow(t2))
+
+  list(winsA = mf$wins.A, teamA = t1, teamB = t2, weightsA = wts1, weightsB = wts2,
+       k = mf$k, adjTeamA = mf$adj.A, adjTeamB = mf$adj.B, regress = regress,
+       to = to, by = attr(mf$regress, "by"),
+       regressUnused = attr(mf$regress, "regress.unused"),
+       initialElos = initial.elos, flag = flag)
 }
 
-check_initial_elos <- function(init.elos = NULL, teams)
+check_named_elos <- function(init.elos = NULL, teams)
 {
-  if(is.null(init.elos))
+  sing <- length(init.elos) == 1 && is.null(names(init.elos))
+  if(is.null(init.elos) || sing)
   {
-    init.elos <- rep(1500, times = length(teams))
+    init.elos <- rep(if(sing) init.elos else 1500, times = length(teams))
     names(init.elos) <- teams
   }
 
@@ -65,7 +55,7 @@ check_initial_elos <- function(init.elos = NULL, teams)
   if(any(!(teams %in% names(init.elos))))
     stop("Some teams were found without supplied Elos.")
 
-  return(init.elos[teams])
+  init.elos[teams]
 }
 
 check_group_regress <- function(x, gt.zero = FALSE)
@@ -102,5 +92,20 @@ check_as_matrix <- function(x, group, regr = FALSE)
 check_final_elos <- function(x, len)
 {
   stopifnot(is.matrix(x$elos), is.numeric(x$elos))
-  stopifnot(length(x$teams) == max(c(x$elos[, 1], x$elos[, 2])))
+  stopifnot(length(x$teams) == max(x$elos[, 1:sum(x$n.players)]))
+}
+
+null_or_length0 <- function(x) is.null(x) || length(x) == 0
+
+clean_elo_formula <- function(Terms)
+{
+  k.col <- attr(Terms, "specials")$k
+  grp.col <- attr(Terms, "specials")$group
+  reg.col <- attr(Terms, "specials")$regress
+
+  if(!null_or_length0(cols <- c(k.col, grp.col, reg.col)))
+  {
+    Terms <- stats::drop.terms(Terms, dropx = cols - 1, keep.response = TRUE)
+  }
+  stats::formula(stats::delete.response(Terms))
 }

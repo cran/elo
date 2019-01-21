@@ -6,7 +6,6 @@
 \alias{fitted.elo.run}
 \alias{residuals.elo.run}
 \alias{mse}
-\alias{summary.elo.run}
 \alias{print.summary.elo.run}
 \title{Summarize an \code{elo.run} Object}
 \usage{
@@ -36,4 +35,8 @@ A summary of \code{object}.
 }
 \description{
 Summarize an \code{elo.run} Object
+}
+\examples{
+summary(elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor,
+  data = tournament, k = 20))
 }
