@@ -16,13 +16,13 @@
 elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., required.vars = "elos")
 {
   Call <- match.call()
-  required.vars <- match.arg(required.vars, c("wins", "elos", "k", "group", "regress"), several.ok = TRUE)
-  indx <- match(c("formula", "data", "subset", "na.action"), names(Call), nomatch = 0)
+  required.vars <- match.arg(required.vars, c("wins", "elos", "k", "group", "regress", "neutral", "weights"), several.ok = TRUE)
+  indx <- match(c("formula", "data", "subset", "na.action", "weights"), names(Call), nomatch = 0)
   if(indx[1] == 0) stop("A formula argument is required.")
 
   temp.call <- Call[c(1, indx)]
   temp.call[[1L]] <- quote(stats::model.frame)
-  specials <- c("adjust", "k", "group", "regress", "players")
+  specials <- c("adjust", "k", "group", "regress", "neutral", "players")
 
   temp.call$formula <- if(missing(data))
   {
@@ -33,6 +33,7 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
   if(nrow(mf) == 0) stop("No (non-missing) observations")
 
   Terms <- stats::terms(mf)
+  naaction <- stats::na.action(mf)
 
   #####################################################################
 
@@ -43,6 +44,8 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
 
   grp.col <- attr(Terms, "specials")$group
   reg.col <- attr(Terms, "specials")$regress
+  neu.col <- attr(Terms, "specials")$neutral
+  wts.col <- which(names(mf) == "(weights)")
 
   if("wins" %in% required.vars && !has.wins)
   {
@@ -58,19 +61,20 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
   }
 
   # need all the parens b/c ! is a low-precident operator
-  sum.empty <- (!null_or_length0(k.col)) + (!null_or_length0(grp.col)) + (!null_or_length0(reg.col))
+  sum.nonempty <- (!null_or_length0(k.col)) + (!null_or_length0(grp.col)) + (!null_or_length0(reg.col)) +
+    (!null_or_length0(neu.col)) + (!null_or_length0(wts.col))
 
-  if(has.wins + sum.empty + 2 != ncol(mf))
+  if(has.wins + sum.nonempty + 2 != ncol(mf))
   {
     stop("'formula' not specified correctly: found ", ncol(mf), " columns; expected ",
-         has.wins + sum.empty + 2)
+         has.wins + sum.nonempty + 2)
   }
 
   # figure out which columns are the "real" ones
-  elo.cols <- if(sum.empty == 0)
+  elo.cols <- if(sum.nonempty == 0)
   {
     (1:2) + has.wins
-  } else setdiff(1:ncol(mf), c(if(has.wins) 1, k.col, grp.col, reg.col))
+  } else setdiff(1:ncol(mf), c(if(has.wins) 1, k.col, grp.col, reg.col, neu.col, wts.col))
   if(length(elo.cols) != 2) stop("Trouble finding the Elo columns.")
 
   #####################################################################
@@ -79,7 +83,11 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
   out$elo.A <- remove_elo_adjust(mf[[elo.cols[1]]])
   out$elo.B <- remove_elo_adjust(mf[[elo.cols[2]]])
 
-  if("wins" %in% required.vars) out$wins.A <- validate_score(as.numeric(mf[[1]]))
+  if("wins" %in% required.vars)
+  {
+    out$wins.A <- as.numeric(mf[[1]])
+    if(!(is.mov <- inherits(mf[[1]], "elo.mov"))) validate_score(out$wins.A)
+  } else is.mov <- FALSE
   if("k" %in% required.vars)
   {
     out$k <- if(null_or_length0(k.col)) k else mf[[k.col]]
@@ -96,14 +104,27 @@ elo.model.frame <- function(formula, data, na.action, subset, k = NULL, ..., req
       regress(rep(FALSE, times = nrow(out)), 1500, 0, FALSE)
     } else mf[[reg.col]]
   }
+  if("neutral" %in% required.vars)
+  {
+    out$home.field <- if(null_or_length0(neu.col)) rep(1, times = nrow(out)) else 1 - mf[[neu.col]]
+  }
+  if("weights" %in% required.vars)
+  {
+    out$weights <- if(null_or_length0(wts.col))
+    {
+      rep(1, times = nrow(out))
+    } else mf[["(weights)"]]
+  }
 
   adjs <- attr(Terms, "specials")$adjust
-  out$adj.A <- if(null_or_length0(adjs) || !any(adjs == elo.cols[1])) 0 else attr(mf[[elo.cols[1]]], "adjust")
-  out$adj.B <- if(null_or_length0(adjs) || !any(adjs == elo.cols[2])) 0 else attr(mf[[elo.cols[2]]], "adjust")
+
+  out$adj.A <- if(null_or_length0(adjs) || !any(adjs == elo.cols[1])) 0 else attr(fix_adjust(mf[[elo.cols[1]]], naaction), "adjust")
+  out$adj.B <- if(null_or_length0(adjs) || !any(adjs == elo.cols[2])) 0 else attr(fix_adjust(mf[[elo.cols[2]]], naaction), "adjust")
 
   if(!is.numeric(out$adj.A) || !is.numeric(out$adj.B)) stop("Any Elo adjustments should be numeric!")
 
   attr(out, "terms") <- Terms
-
+  attr(out, "na.action") <- naaction
+  attr(out, "outcome") <- if(is.mov) "mov" else "score"
   out
 }

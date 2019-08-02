@@ -97,15 +97,116 @@ check_final_elos <- function(x, len)
 
 null_or_length0 <- function(x) is.null(x) || length(x) == 0
 
-clean_elo_formula <- function(Terms)
+clean_elo_formula <- function(Terms, drop.neutral = TRUE)
 {
   k.col <- attr(Terms, "specials")$k
   grp.col <- attr(Terms, "specials")$group
   reg.col <- attr(Terms, "specials")$regress
+  neu.col <- attr(Terms, "specials")$neutral
 
-  if(!null_or_length0(cols <- c(k.col, grp.col, reg.col)))
+  if(!null_or_length0(cols <- c(k.col, grp.col, reg.col, if(drop.neutral) neu.col)))
   {
     Terms <- stats::drop.terms(Terms, dropx = cols - 1, keep.response = TRUE)
   }
   stats::formula(stats::delete.response(Terms))
+}
+
+
+
+mf_to_wide <- function(mf, teams = NULL)
+{
+  t1 <- mf$elo.A
+  t2 <- mf$elo.B
+
+  if(is.numeric(t1) || is.numeric(t2)) stop("Neither team should be numeric")
+  if(!is.players(t1)) t1 <- players(t1)
+  if(anyNA(t1)) stop("NAs were found in team.A; check that it can be coerced to character.")
+
+  if(!is.players(t2)) t2 <- players(t2)
+  if(anyNA(t2)) stop("NAs were found in team.B; check that it can be coerced to character.")
+  all.teams <- sort(unique(c(as.character(t1), as.character(t2))))
+  if(!is.null(teams))
+  {
+    if(!all(all.teams %in% teams)) stop("Unknown teams: ", paste0(unique(all.teams[!(all.teams %in% teams)]), collapse = ", "))
+    all.teams <- teams
+  }
+
+  dat <- lapply(all.teams, function(tm) (rowSums(t1 == tm) > 0) - (rowSums(t2 == tm) > 0))
+  names(dat) <- all.teams
+  dat$home.field <- mf$home.field
+  dat <- dat[c("home.field", all.teams)] # rearrange to put home field first
+  dat$adj.A <- mf$adj.A
+  dat$adj.B <- mf$adj.B
+  structure(dat, class = "data.frame", row.names = c(NA_integer_, nrow(mf)), all.teams = all.teams)
+}
+
+check_elo_markovchain_vars <- function(mf)
+{
+  t1 <- mf$elo.A
+  t2 <- mf$elo.B
+
+  if(is.numeric(t1) || is.numeric(t2)) stop("Neither team should be numeric")
+  if(!is.players(t1)) t1 <- players(t1)
+  if(anyNA(t1)) stop("NAs were found in team.A; check that it can be coerced to character.")
+
+  if(!is.players(t2)) t2 <- players(t2)
+  if(anyNA(t2)) stop("NAs were found in team.B; check that it can be coerced to character.")
+  all.teams <- sort(unique(c(as.character(t1), as.character(t2))))
+
+  tmp <- stats::setNames(seq_along(all.teams) - 1L, all.teams)
+  wts1 <- weights(t1)
+  wts2 <- weights(t2)
+  t1 <- matrix(tmp[t1], nrow = nrow(t1))
+  t2 <- matrix(tmp[t2], nrow = nrow(t2))
+
+  if(!all(mf$weights > 0)) stop("Weights should be positive numbers")
+
+  if(!all(0 <= mf$k & mf$k <= 1)) stop("Probabilities 'k' should be between 0 and 1 (inclusive)")
+  winsA <- if(attr(mf, "outcome") == "mov") score(mf$wins.A, 0) else mf$wins.A
+  structure(list(winsA = winsA, k = mf$k, weights = mf$weights, teamA = t1, teamB = t2,
+                 weightsA = wts1, weightsB = wts2, nTeams = length(all.teams)), teams = all.teams)
+}
+
+group_to_int <- function(grp, skip)
+{
+  grp2 <- check_group_regress(grp, gt.zero = FALSE)
+  grp2 <- rev(cumsum(rev(grp2)))
+  mx <- max(grp2)
+  if(skip > mx || skip < 0) stop("skip must be between 0 and ", mx, " (inclusive)")
+  mx + 1 - grp2 # from mx : 1 to 1 : mx
+}
+
+
+
+check_elo_winpct_vars <- function(mf)
+{
+  t1 <- mf$elo.A
+  t2 <- mf$elo.B
+
+  if(is.numeric(t1) || is.numeric(t2)) stop("Neither team should be numeric")
+  if(!is.players(t1)) t1 <- players(t1)
+  if(anyNA(t1)) stop("NAs were found in team.A; check that it can be coerced to character.")
+
+  if(!is.players(t2)) t2 <- players(t2)
+  if(anyNA(t2)) stop("NAs were found in team.B; check that it can be coerced to character.")
+  all.teams <- sort(unique(c(as.character(t1), as.character(t2))))
+
+  tmp <- stats::setNames(seq_along(all.teams) - 1L, all.teams)
+  wts1 <- weights(t1)
+  wts2 <- weights(t2)
+  t1 <- matrix(tmp[t1], nrow = nrow(t1))
+  t2 <- matrix(tmp[t2], nrow = nrow(t2))
+
+  if(!all(mf$weights > 0)) stop("Weights should be positive numbers")
+
+  winsA <- if(attr(mf, "outcome") == "mov") score(mf$wins.A, 0) else mf$wins.A
+  out <- list(winsA = winsA, weights = mf$weights, teamA = t1, teamB = t2,
+              weightsA = wts1, weightsB = wts2, nTeams = length(all.teams))
+  attr(out, "teams") <- all.teams
+  out
+}
+
+mean_vec_subset_matrix <- function(vec, mat)
+{
+  rowMeans(matrix(vec[mat], nrow = nrow(mat)))
 }

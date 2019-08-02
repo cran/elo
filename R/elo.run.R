@@ -29,8 +29,8 @@
 #' elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 30) +
 #'         team.Visitor + regress(half, 1500, 0.2), data = tournament, k = 20)
 #'
-#' @seealso \code{\link{score}}, \code{\link{elo.calc}}, \code{\link{elo.update}}, \code{\link{elo.prob}},
-#'   \code{\link{elo.model.frame}}, \link{elo.run.helpers}{elo.run helpers}.
+#' @seealso \code{\link{score}}, \link{elo.run.helpers}{elo.run helpers}, \code{\link{elo.calc}},
+#'   \code{\link{elo.update}}, \code{\link{elo.prob}}, \code{\link{elo.model.frame}}.
 #' @name elo.run
 NULL
 #> NULL
@@ -43,6 +43,7 @@ elo.run <- function(formula, data, na.action, subset, k = NULL, initial.elos = N
   Call[[1L]] <- quote(elo::elo.model.frame)
   Call$required.vars <- c("wins", "elos", "k", "group", "regress")
   mf <- eval(Call, parent.frame())
+  if(nrow(mf) == 0) stop("No (non-missing) observations")
   Terms <- stats::terms(mf)
 
   checked <- check_elo_run_vars(mf, initial.elos)
@@ -57,7 +58,8 @@ elo.run <- function(formula, data, na.action, subset, k = NULL, initial.elos = N
     teams = names(checked$initialElos),
     group = mf$group,
     regress = if(any.regr) mf$regress else NULL,
-    terms = Terms
+    terms = Terms,
+    na.action = stats::na.action(mf)
   ), class = c(if(any.regr) "elo.run.regressed", "elo.run"))
 }
 

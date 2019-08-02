@@ -2,33 +2,14 @@
 % Please edit documentation in R/summary.elo.run.R
 \name{summary.elo.run}
 \alias{summary.elo.run}
-\alias{favored}
-\alias{fitted.elo.run}
-\alias{residuals.elo.run}
-\alias{mse}
-\alias{print.summary.elo.run}
 \title{Summarize an \code{elo.run} Object}
 \usage{
-favored(x, ...)
-
-\method{fitted}{elo.run}(object, ...)
-
-\method{residuals}{elo.run}(object, ...)
-
-mse(object, subset)
-
 \method{summary}{elo.run}(object, ...)
-
-\method{print}{summary.elo.run}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{"summary.elo.run"}.}
-
-\item{...}{Other arguments}
-
 \item{object}{An object resulting from \code{\link{elo.run}}.}
 
-\item{subset}{A vector of indices on which to calculate the MSE.}
+\item{...}{Other arguments}
 }
 \value{
 A summary of \code{object}.
@@ -39,4 +20,7 @@ Summarize an \code{elo.run} Object
 \examples{
 summary(elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor,
   data = tournament, k = 20))
+}
+\seealso{
+\code{\link{elo.run}}, \code{\link{favored}}, \code{\link{auc.elo.run}}, \code{\link{mse}}
 }
