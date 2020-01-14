@@ -4,8 +4,17 @@
 \alias{elo.model.frame}
 \title{Interpret formulas in \code{elo} functions}
 \usage{
-elo.model.frame(formula, data, na.action, subset, k = NULL, ...,
-  required.vars = "elos")
+elo.model.frame(
+  formula,
+  data,
+  na.action,
+  subset,
+  k = NULL,
+  ...,
+  required.vars = "elos",
+  warn.k = TRUE,
+  ncol.k = 1
+)
 }
 \arguments{
 \item{formula}{A formula. See \link[=formula.specials]{the help page for formulas} for details.}
@@ -22,6 +31,10 @@ elo.model.frame(formula, data, na.action, subset, k = NULL, ...,
 
 \item{required.vars}{One or more of \code{c("wins", "elos", "k", "group", "regress")},
 denoting which variables are required to appear in the final model.frame.}
+
+\item{warn.k}{Should a warning be issued if \code{k} is specified as an argument and in \code{formula}?}
+
+\item{ncol.k}{How many columns (\code{NCOL}) should \code{k} have?}
 }
 \description{
 A helper function to create the \code{model.frame} for many \code{elo} functions.

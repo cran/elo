@@ -1,43 +1,42 @@
-#' \code{elo.markovchain}
+#' \code{elo.colley}
 #'
-#' Compute a Markov chain model for a matchup.
+#' Compute a Colley matrix model for a matchup.
 #'
 #' @inheritParams elo.glm
-#' @param weights A vector of weights. Note that these weights are used in the Markov Chain model,
+#' @param weights A vector of weights. Note that these weights are used in the Colley matrix creation,
 #'   but not the regression.
-#' @param k The probability that the winning team is better given that they won. See details.
+#' @param k The fraction of a win to be assigned to the winning team. See "details".
 #' @examples
-#' elo.markovchain(score(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = tournament,
-#'   subset = points.Home != points.Visitor, k = 0.7)
-#'
-#' elo.markovchain(mov(points.Home, points.Visitor) ~ team.Home + team.Visitor, family = "gaussian",
-#'   data = tournament, k = 0.7)
+#' elo.colley(score(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = tournament,
+#'   subset = points.Home != points.Visitor)
 #' @details
-#'   See the vignette for details on this method. The probabilities we call 'k' purely for convenience.
-#'   The differences in assigned scores (from the stationary distribution pi) are fed into a logistic
+#'   See the vignette for details on this method.
+#'   The differences in assigned scores (from the coefficients of the Colley matrix regression) are fed into a logistic
 #'   regression model to predict wins or (usually) a linear model to predict margin of victory.
+#'   In this setting, 'k' indicates the fraction of a win to be assigned to the winning team
+#'   (and the fraction of a loss to be assigned to the losing team); setting \code{k = 1} (the default)
+#'   emits the "Bias Free" ranking method presented by Colley.
 #'   It is also possible to adjust the regression by setting the second argument of
 #'    \code{\link{adjust}()}. As in \code{\link{elo.glm}},
 #'   the intercept represents the home-field advantage. Neutral fields can be indicated
 #'   using the \code{\link{neutral}()} function, which sets the intercept to 0.
 #'
-#'   Note that by assigning probabilities in the right way, this function emits the
-#'   Logistic Regression Markov Chain model (LRMC).
-#' @references Kvam, P. and Sokol, J.S. A logistic regression/Markov chain model for NCAA basketball.
-#'   Naval Research Logistics. 2006. 53; 788-803.
-#' @seealso \code{\link[stats]{glm}}, \code{\link{summary.elo.markovchain}}, \code{\link{score}},
+#' @references Colley W.N. Colley's Bias Free College Football Ranking Method: The Colley Matrix Explained. 2002.
+#' @seealso \code{\link[stats]{glm}}, \code{\link{summary.elo.colley}}, \code{\link{score}},
 #'   \code{\link{mov}}, \code{\link{elo.model.frame}}
-#' @name elo.markovchain
+#' @name elo.colley
 NULL
 #> NULL
 
-#' @rdname elo.markovchain
+#' @rdname elo.colley
 #' @export
-elo.markovchain <- function(formula, data, family = "binomial", weights, na.action, subset, k = NULL, ..., running = FALSE, skip = 0)
+elo.colley <- function(formula, data, family = "binomial", weights, na.action, subset, k = 1, ..., running = FALSE, skip = 0)
 {
   Call <- match.call()
   Call[[1L]] <- quote(elo::elo.model.frame)
   Call$required.vars <- c("wins", "elos", "group", "neutral", "weights", "k")
+  if(is.null(Call$k)) Call$k <- 1
+  Call$warn.k <- FALSE
   Call$ncol.k <- 2
   mf <- eval(Call, parent.frame())
   if(nrow(mf) == 0) stop("No (non-missing) observations")
@@ -48,11 +47,11 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
   grp <- mf$group
 
   # we use the convention Ax = x
-  out <- do.call(eloMarkovChain, dat)
-  if(any(abs(colSums(out[[1]]) - 1) > sqrt(.Machine$double.eps))) warning("colSums(transition matrix) may not be 1")
+  colley <- do.call(eloColley, dat)
+  ## come back to this
+  # if(any(abs(colSums(out[[1]]) - 1) > sqrt(.Machine$double.eps))) warning("colSums(transition matrix) may not be 1")
 
-  eig <- eigen(out[[1]])
-  vec <- as.numeric(eig$vectors[, 1])
+  vec <- stats::.lm.fit(colley[[1]], colley[[2]])$coefficients
   vec <- stats::setNames(vec / sum(vec), all.teams)
   difference <- mean_vec_subset_matrix(vec, dat$teamA+1) - mean_vec_subset_matrix(vec, dat$teamB+1)
   mc.dat <- data.frame(wins.A = mf$wins.A, home.field = mf$home.field, difference = difference)
@@ -62,10 +61,9 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
   out <- list(
     fit = mc.glm,
     weights = mf$weights,
-    transition = out[[1]],
-    n.games = out[[2]],
+    matrix = colley[[1]],
+    response = colley[[2]],
     pi = vec,
-    eigenvalue = as.numeric(eig$values[1]),
     y = mc.glm$y,
     fitted.values = mc.glm$fitted.values,
     teams = all.teams,
@@ -93,8 +91,8 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
       dat.tmp$teamA <- dat.tmp$teamA[sbst, , drop = FALSE]
       dat.tmp$teamB <- dat.tmp$teamB[sbst, , drop = FALSE]
 
-      eig <- eigen(do.call(eloMarkovChain, dat.tmp)[[1]])
-      vec <- as.numeric(eig$vectors[, 1])
+      colley <- do.call(eloColley, dat.tmp)
+      vec <- stats::.lm.fit(colley[[1]], colley[[2]])$coefficients
       vec <- stats::setNames(vec / sum(vec), all.teams)
       difference <- mean_vec_subset_matrix(vec, dat$teamA+1) - mean_vec_subset_matrix(vec, dat$teamB+1)
 
@@ -108,13 +106,13 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
     out$running.values <- mc.glm$family$linkinv(ftd)
   }
 
-  structure(out, class = c(if(running) "elo.running", "elo.markovchain"))
+  structure(out, class = c(if(running) "elo.running", "elo.colley"))
 }
 
 #' @export
-print.elo.markovchain <- function(x, ...)
+print.elo.colley <- function(x, ...)
 {
-  cat("\nAn object of class 'elo.markovchain', containing information on ", length(x$teams),
-      " teams and ", sum(x$n.games)/2, " matches.\n\n", sep = "")
+  cat("\nAn object of class 'elo.colley', containing information on ", length(x$teams),
+      " teams and ", sum(x$weights), " matches.\n\n", sep = "")
   invisible(x)
 }

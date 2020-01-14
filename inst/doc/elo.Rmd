@@ -83,6 +83,13 @@ elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor +
         k(20*log(abs(points.Home - points.Visitor) + 1)), data = tournament)
 ```
 
+You can also adjust the home and visitor teams with different k's:
+
+```{r}
+k1 <- 20*log(abs(tournament$points.Home - tournament$points.Visitor) + 1)
+elo.run(score(points.Home, points.Visitor) ~ team.Home + team.Visitor + k(k1, k1/2), data = tournament)
+```
+
 It's also possible to adjust one team's Elo for a variety of factors
 (e.g., home-field advantage). The `adjust()` special function will take as its second
 argument a vector or a constant.
@@ -170,6 +177,38 @@ newdat <- data.frame(
 )
 predict(results, newdata = newdat)
 ```
+
+## Advanced: custom probability and updates
+
+We now get to `elo.run2()`, a copy of `elo.run()` (but implemented in R) that allows for custom probability calculations and Elo updates.
+
+For instance, suppose you want to change the adjustment based on team A's current Elo:
+
+```{r}
+custom_update <- function(wins.A, elo.A, elo.B, k, adjust.A, adjust.B, ...)
+{
+  k*(wins.A - elo.prob(elo.A, elo.B, adjust.B = adjust.B,
+                       adjust.A = ifelse(elo.A > 1500, adjust.A / 2, adjust.A)))
+}
+custom_prob <- function(elo.A, elo.B, adjust.A, adjust.B)
+{
+  1/(1 + 10^(((elo.B + adjust.B) - (elo.A + ifelse(elo.A > 1500, adjust.A / 2, adjust.A)))/400.0))
+}
+er2 <- elo.run2(score(points.Home, points.Visitor) ~ adjust(team.Home, 10) + team.Visitor,
+                data = tournament, k = 20, prob.fun = custom_prob, update.fun = custom_update)
+final.elos(er2)
+```
+
+Compare this to the results from the default:
+
+```{r}
+er3 <- elo.run(score(points.Home, points.Visitor) ~ adjust(team.Home, 10) + team.Visitor,
+               data = tournament, k = 20)
+final.elos(er3)
+```
+
+This example is a bit contrived, as it'd be easier just to use `adjust()` (actually, this is tested for in the tests), but the point remains.
+
 
 # Basic Functions Revisited - Formula Interface
 
@@ -326,6 +365,40 @@ Finally, do note that using `neutral()` isn't sufficient for adjusting for games
 because the adjustment is only taken into account in the logistic regression to produce probabilities, not
 the building of the transition matrix. Therefore, you'll want to also account for neutral wins/losses in
 `k()` as well.
+
+## Colley Matrix Method
+
+It's also possible to compare teams' skills using the Colley Matrix method, as outlined in
+[Colley (2002)](http://www.colleyrankings.com/matrate.pdf).
+The coefficients to the Colley matrix formulation gives a ranking of teams.
+The differences in ranking are then fed into a logistic regession model to predict win status.
+Here 'k' denotes how convincing a win is; it represents the fraction of the win assigned to the winning
+team and the fraction of the loss assigned to the losing team. Setting 'k' = 1 emits the bias-free method
+presented by Colley.
+Any adjustments made using `adjust()` are also included in this logistic regression.
+You could also adjust the intercept for games played on neutral fields by using the `neutral()` function.
+
+```{r}
+co <- elo.colley(score(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = tournament,
+                 subset = points.Home != points.Visitor)
+summary(co)
+rank.teams(co)
+predict(co, newdata = data.frame(team.Home = "Athletic Armadillos", team.Visitor = "Blundering Baboons", stringsAsFactors = FALSE))
+summary(elo.colley(score(points.Home, points.Visitor) ~ team.Home + team.Visitor + neutral(neutral),
+                   data = tournament, subset = points.Home != points.Visitor))
+```
+
+These models can also be built "running", where predictions for the next group of games are made based on past data.
+Consider using the `skip=` argument to skip the first few groups (otherwise the model might have trouble converging).
+
+Note that predictions from this object use a model fit on all the data.
+
+```{r}
+co <- elo.colley(score(points.Home, points.Visitor) ~ team.Home + team.Visitor + group(week), data = tournament,
+                      subset = points.Home != points.Visitor, running = TRUE, skip = 5)
+summary(co)
+predict(co, newdata = data.frame(team.Home = "Athletic Armadillos", team.Visitor = "Blundering Baboons", stringsAsFactors = FALSE)) # the same thing
+```
 
 # Modeling Margin of Victory Instead of Wins
 

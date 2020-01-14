@@ -4,8 +4,18 @@
 \alias{elo.markovchain}
 \title{\code{elo.markovchain}}
 \usage{
-elo.markovchain(formula, data, family = "binomial", weights, na.action,
-  subset, k = NULL, ..., running = FALSE, skip = 0)
+elo.markovchain(
+  formula,
+  data,
+  family = "binomial",
+  weights,
+  na.action,
+  subset,
+  k = NULL,
+  ...,
+  running = FALSE,
+  skip = 0
+)
 }
 \arguments{
 \item{formula}{A formula. See \link[=formula.specials]{the help page for formulas} for details.}
@@ -45,7 +55,6 @@ See the vignette for details on this method. The probabilities we call 'k' purel
    \code{\link{adjust}()}. As in \code{\link{elo.glm}},
   the intercept represents the home-field advantage. Neutral fields can be indicated
   using the \code{\link{neutral}()} function, which sets the intercept to 0.
-  See the vignette for more details.
 
   Note that by assigning probabilities in the right way, this function emits the
   Logistic Regression Markov Chain model (LRMC).
