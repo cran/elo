@@ -1,7 +1,4 @@
-
-#' \code{elo.glm}
-#'
-#' Compute a (usually logistic) regression model for a matchup.
+#' Compute a (usually logistic) regression model for a series of matches.
 #'
 #' @inheritParams elo.calc
 #' @param family,weights,... Arguments passed to \code{\link[stats]{glm}}.
@@ -25,6 +22,9 @@
 #'   using the \code{\link{neutral}()} function, which sets the intercept to 0.
 #'
 #'   Note that any weights specified in \code{players()} will be ignored.
+#'
+#'   This is essentially the Bradley-Terry model.
+#' @references https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model
 #' @examples
 #' data(tournament)
 #' elo.glm(score(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = tournament,
@@ -42,6 +42,7 @@ NULL
 elo.glm <- function(formula, data, family = "binomial", weights, na.action, subset, ..., running = FALSE, skip = 0)
 {
   Call <- match.call()
+  Call <- Call[c(1, match(c("formula", "data", "weights", "subset", "na.action"), names(Call), nomatch = 0))]
   Call[[1L]] <- quote(elo::elo.model.frame)
   Call$required.vars <- c("wins", "elos", "group", "neutral", "weights")
   mf <- eval(Call, parent.frame())
@@ -53,41 +54,44 @@ elo.glm <- function(formula, data, family = "binomial", weights, na.action, subs
 
   # find spanning set
   QR <- qr(dat)
-  dat <- dat[QR$pivot[seq_len(QR$rank)]]
+  dat.qr <- dat[QR$pivot[seq_len(QR$rank)]]
 
-  dat$wins.A <- mf$wins.A
+  dat.qr$wins.A <- mf$wins.A
   grp <- mf$group
 
   wts <- mf$weights
-  dat.glm <- stats::glm(wins.A ~ . - 1, data = dat, family = family, na.action = stats::na.pass, subset = NULL, weights = wts, ...)
-  dat.glm$teams <- all.teams
-  dat.glm$group <- grp
-  dat.glm$elo.terms <- Terms
-  dat.glm$na.action <- stats::na.action(mf)
-  dat.glm$outcome <- attr(mf, "outcome")
+  out <- stats::glm(wins.A ~ . - 1, data = dat.qr, family = family, na.action = stats::na.pass, subset = NULL, weights = wts, ...)
+  out$teams <- all.teams
+  out$group <- grp
+  out$elo.terms <- Terms
+  out$na.action <- stats::na.action(mf)
+  out$outcome <- attr(mf, "outcome")
 
   if(running)
   {
-    dat.mat <- as.matrix(dat[names(dat) != "wins.A"])
-    y <- dat$wins.A
+    dat.mat <- as.matrix(dat)
+    y <- mf$wins.A
 
     ftd <- rep(0, times = nrow(dat))
     grp2 <- group_to_int(grp, skip)
 
     for(i in setdiff(seq_len(max(grp2)), seq_len(skip)))
     {
-      if(i == 1) next
-      sbst <- grp2 %in% 1:(i-1)
+      if(i == 0) next
+      sbst <- grp2 %in% 0:(i-1)
 
       # tmpfit <- stats::glm(wins.A ~ . - 1, data = dat, subset = sbst, weights = wts, family = family)
       # ftd[grp2 == i] <- predict(tmpfit, newdata = dat[grp2 == i, ], type = "link")
 
-      coeff <- stats::glm.fit(dat.mat[sbst, , drop = FALSE], y[sbst], wts[sbst], family = dat.glm$family,
-                              control = dat.glm$control)$coefficients
-      ftd[grp2 == i] <- apply(dat.mat[grp2 == i, , drop = FALSE], 1, function(x) sum(x * coeff, na.rm = TRUE))
+      d <- dat.mat[sbst, , drop = FALSE]
+      coeff <- stats::glm.fit(d, y[sbst], wts[sbst], family = out$family,
+                              control = out$control)$coefficients
+      valid <- colSums(d != 0) > 0
+      ftd[grp2 == i] <- apply(dat.mat[grp2 == i, , drop = FALSE], 1, mult_valid_coef, coeff = coeff, valid = valid)
     }
-    dat.glm$running.values <- dat.glm$family$linkinv(ftd)
+    out$running.values <- out$family$linkinv(ftd)
+    attr(out$running.values, "group") <- grp2
   }
 
-  structure(dat.glm, class = c(if(running) "elo.running", "elo.glm", class(dat.glm)))
+  structure(out, class = c(if(running) "elo.running", "elo.glm", class(out)))
 }

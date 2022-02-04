@@ -43,7 +43,8 @@
 #'   (\code{by = }), and whether to continue regressing teams which have stopped playing (\code{regress.unused},
 #'   default = \code{TRUE}).
 #'
-#' \code{group()} is used to group matches (by, e.g., week). It is fed to \code{\link{as.matrix.elo.run}}
+#' \code{group()} is used to group matches (by, e.g., week). For \code{\link{elo.run}}, Elos are not updated until
+#'   the group changes. It is also fed to \code{\link{as.matrix.elo.run}}, giving the number of rows to return.
 #'   to produce only certain rows of matrix output. It also determines how many models to run (and on what data)
 #'   for \code{\link{elo.glm}} and \code{\link{elo.markovchain}} when \code{running=TRUE}.
 #'
@@ -54,6 +55,8 @@
 #'
 #' \code{players()} is used for multiple players on a team contributing to an overall Elo. The Elo updates
 #'   are then assigned based on the specified weights. The weights are ignored in \code{\link{elo.glm}}.
+#'
+#' \code{multiteam()} is used for matchups consisting of multiple teams and is only valid in \code{\link{elo.run.multiteam}}.
 #' @name formula.specials
 NULL
 #> NULL
@@ -63,7 +66,25 @@ NULL
 k <- function(x, y = NULL)
 {
   if(!is.null(y)) x <- matrix(c(x, y), ncol = 2)
-  structure(x, class = c("elo.k", class(x)))
+  structure(x, class = c("elo.k", class(x)[class(x) != "elo.k"]))
+}
+
+#' @export
+length.elo.k <- function(x) NROW(unclass(x))
+
+#' @export
+is.na.elo.k <- function(x)
+{
+  if(NCOL(x) == 1) NextMethod() else rowSums(is.na(unclass(x))) > 0
+}
+
+#' @export
+`[.elo.k` <- function(x, i, j, drop = FALSE)
+{
+  if(!missing(j)) return(NextMethod())
+  y <- if(NCOL(x) == 1) NextMethod() else unclass(x)[i, , drop = FALSE]
+  class(y) <- class(x)
+  y
 }
 
 remove_elo_k <- function(x)

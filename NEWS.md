@@ -1,3 +1,47 @@
+# elo v3.0.1
+
+* The package title no longer begins with the word "Elo".
+
+* Fixed one URL redirect
+
+* Added a reference to the help page and vignette for `elo.glm()`.
+
+# elo v3.0.0
+
+Breaking changes: 
+
+* Restricted the version of R to >= 3.6.
+
+* Changed the impact of the `group()` formula special in `elo.run()`. It now indicates when to update Elos. (#54)
+
+* Removed `elo.run2()`, to be replaced by passing arguments to `elo.run()`. A message is issued when the R backend is used.
+
+* The `[.elo.k()` (new) and `[.elo.players.matrix()` methods now drop any extra classes when `j=` is specified.
+
+* Changed a warning to an error in `final.elos()` when using `regressed=TRUE` without regression after the last game.
+
+* `elo.glm()`, `elo.markovchain()`, `elo.winpct()`, `elo.colley()` now emit NAs for running predictions on groups that haven't been seen yet. (#56)
+
+Other changes:
+
+* Added `subset=` argument to `auc()` and `favored()`.
+
+* Added `ignore.skipped=FALSE` argument to `auc()`, `favored()`, and `mse()` running methods.
+
+* Added attributes to `fitted.elo.running(..., running=TRUE)` to indicate the group (i.e., model) from which the prediction arises.
+
+* Added `elo.run.multiteam()` for when matchups consist of multiple teams. (#54)
+
+* Improved documentation, including expanding from 1 to 3 vignettes
+
+* Fixed a bug with the `as.data.frame()` method for `elo.run()` when `players()` are involved. (#55)
+
+* Changed how `tournament` is created (though the data didn't actually change).
+
+* Made some methods more explicit: `length.elo.k()`, `is.na.elo.k()`, `[.elo.k()`, `is.na.elo.players.matrix()`
+
+* Made one fix for R-devel related to subsetting a vector with a classed object.
+
 # elo v2.1.1
 
 * Fixed the "Date" in DESCRIPTION.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/elo.glm.R
 \name{elo.glm}
 \alias{elo.glm}
-\title{\code{elo.glm}}
+\title{Compute a (usually logistic) regression model for a series of matches.}
 \usage{
 elo.glm(
   formula,
@@ -41,7 +41,7 @@ An object of class \code{c("elo.glm", "glm")}. If \code{running==TRUE}, the clas
   is prepended.
 }
 \description{
-Compute a (usually logistic) regression model for a matchup.
+Compute a (usually logistic) regression model for a series of matches.
 }
 \details{
 The formula syntax is the same as other \code{elo} functions. A data.frame
@@ -54,6 +54,8 @@ The formula syntax is the same as other \code{elo} functions. A data.frame
   using the \code{\link{neutral}()} function, which sets the intercept to 0.
 
   Note that any weights specified in \code{players()} will be ignored.
+
+  This is essentially the Bradley-Terry model.
 }
 \examples{
 data(tournament)
@@ -61,6 +63,9 @@ elo.glm(score(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = to
   subset = points.Home != points.Visitor)
 elo.glm(mov(points.Home, points.Visitor) ~ team.Home + team.Visitor, data = tournament,
   family = "gaussian")
+}
+\references{
+https://en.wikipedia.org/wiki/Bradley%E2%80%93Terry_model
 }
 \seealso{
 \code{\link[stats]{glm}}, \code{\link{summary.elo.glm}}, \code{\link{score}},

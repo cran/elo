@@ -1,6 +1,4 @@
-#' \code{elo.winpct}
-#'
-#' Compute a (usually logistic) regression based on win percentage for a matchup.
+#' Compute a (usually logistic) regression based on win percentage for a series of matches.
 #'
 #' @inheritParams elo.glm
 #' @param weights A vector of weights. Note that these are used in calculating wins and losses but
@@ -70,14 +68,14 @@ elo.winpct <- function(formula, data, family = "binomial", weights, na.action, s
 
     for(i in setdiff(seq_len(max(grp2)), seq_len(skip)))
     {
-      if(i == 1) next
-      sbst <- grp2 %in% 1:(i-1)
+      if(i == 0) next
+      sbst <- grp2 %in% 0:(i-1)
       dat.tmp <- dat
       dat.tmp[1:2] <- lapply(dat.tmp[1:2], `[`, sbst)
       dat.tmp$teamA <- dat.tmp$teamA[sbst, , drop = FALSE]
       dat.tmp$teamB <- dat.tmp$teamB[sbst, , drop = FALSE]
 
-      wl <- do.call(eloWinPct, dat)
+      wl <- do.call(eloWinPct, dat.tmp)
       vec <- stats::setNames(wl[[1]], all.teams)
 
       difference <- mean_vec_subset_matrix(vec, dat$teamA+1) - mean_vec_subset_matrix(vec, dat$teamB+1)
@@ -87,9 +85,10 @@ elo.winpct <- function(formula, data, family = "binomial", weights, na.action, s
 
       coeff <- stats::glm.fit(cbind(difference, adj)[sbst, , drop=FALSE],
                               dat.tmp$winsA, family = wl.glm$family, control = wl.glm$control)$coefficients
-      ftd[grp2 == i] <- apply(cbind(difference, adj)[grp2 == i, , drop=FALSE], 1, function(x) sum(x * coeff, na.rm = TRUE))
+      ftd[grp2 == i] <- apply(cbind(difference, adj)[grp2 == i, , drop=FALSE], 1, mult_na_coef, coeff = coeff)
     }
     out$running.values <- wl.glm$family$linkinv(ftd)
+    attr(out$running.values, "group") <- grp2
   }
 
   structure(out, class = c(if(running) "elo.running", "elo.winpct"))

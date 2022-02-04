@@ -1,6 +1,4 @@
-#' \code{elo.markovchain}
-#'
-#' Compute a Markov chain model for a matchup.
+#' Compute a Markov chain model for a series of matches.
 #'
 #' @inheritParams elo.glm
 #' @param weights A vector of weights. Note that these weights are used in the Markov Chain model,
@@ -36,6 +34,7 @@ NULL
 elo.markovchain <- function(formula, data, family = "binomial", weights, na.action, subset, k = NULL, ..., running = FALSE, skip = 0)
 {
   Call <- match.call()
+  Call <- Call[c(1, match(c("formula", "data", "weights", "subset", "na.action", "k"), names(Call), nomatch = 0))]
   Call[[1L]] <- quote(elo::elo.model.frame)
   Call$required.vars <- c("wins", "elos", "group", "neutral", "weights", "k")
   Call$ncol.k <- 2
@@ -79,13 +78,12 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
   {
     ftd <- rep(0, times = nrow(mc.dat))
     grp2 <- group_to_int(grp, skip)
-    y <- dat$winsA
     adj <- cbind(mf$home.field, mf$adj.A, mf$adj.B)
 
     for(i in setdiff(seq_len(max(grp2)), seq_len(skip)))
     {
-      if(i == 1) next
-      sbst <- grp2 %in% 1:(i-1)
+      if(i == 0) next
+      sbst <- grp2 %in% 0:(i-1)
       dat.tmp <- dat
       dat.tmp$winsA <- dat.tmp$winsA[sbst]
       dat.tmp$k <- dat.tmp$k[sbst, , drop = FALSE]
@@ -96,6 +94,7 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
       eig <- eigen(do.call(eloMarkovChain, dat.tmp)[[1]])
       vec <- as.numeric(eig$vectors[, 1])
       vec <- stats::setNames(vec / sum(vec), all.teams)
+      vec[vec == 0] <- NA
       difference <- mean_vec_subset_matrix(vec, dat$teamA+1) - mean_vec_subset_matrix(vec, dat$teamB+1)
 
       # tmpfit <- stats::glm(dat$winsA ~ difference, subset = sbst, family = "binomial")
@@ -103,9 +102,10 @@ elo.markovchain <- function(formula, data, family = "binomial", weights, na.acti
 
       coeff <- stats::glm.fit(cbind(difference, adj)[sbst, , drop=FALSE],
                               dat.tmp$winsA, family = mc.glm$family, control = mc.glm$control)$coefficients
-      ftd[grp2 == i] <- apply(cbind(difference, adj)[grp2 == i, , drop=FALSE], 1, function(x) sum(x * coeff, na.rm = TRUE))
+      ftd[grp2 == i] <- apply(cbind(difference, adj)[grp2 == i, , drop=FALSE], 1, mult_na_coef, coeff = coeff)
     }
     out$running.values <- mc.glm$family$linkinv(ftd)
+    attr(out$running.values, "group") <- grp2
   }
 
   structure(out, class = c(if(running) "elo.running", "elo.markovchain"))

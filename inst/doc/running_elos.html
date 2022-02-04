@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Ethan Heinzen" />
+
+
+<title>Calculating Running Elo Updates</title>
+
+<script src="data:application/javascript;base64,Ly8gUGFuZG9jIDIuOSBhZGRzIGF0dHJpYnV0ZXMgb24gYm90aCBoZWFkZXIgYW5kIGRpdi4gV2UgcmVtb3ZlIHRoZSBmb3JtZXIgKHRvCi8vIGJlIGNvbXBhdGlibGUgd2l0aCB0aGUgYmVoYXZpb3Igb2YgUGFuZG9jIDwgMi44KS4KZG9jdW1lbnQuYWRkRXZlbnRMaXN0ZW5lcignRE9NQ29udGVudExvYWRlZCcsIGZ1bmN0aW9uKGUpIHsKICB2YXIgaHMgPSBkb2N1bWVudC5xdWVyeVNlbGVjdG9yQWxsKCJkaXYuc2VjdGlvbltjbGFzcyo9J2xldmVsJ10gPiA6Zmlyc3QtY2hpbGQiKTsKICB2YXIgaSwgaCwgYTsKICBmb3IgKGkgPSAwOyBpIDwgaHMubGVuZ3RoOyBpKyspIHsKICAgIGggPSBoc1tpXTsKICAgIGlmICghL15oWzEtNl0kL2kudGVzdChoLnRhZ05hbWUpKSBjb250aW51ZTsgIC8vIGl0IHNob3VsZCBiZSBhIGhlYWRlciBoMS1oNgogICAgYSA9IGguYXR0cmlidXRlczsKICAgIHdoaWxlIChhLmxlbmd0aCA+IDApIGgucmVtb3ZlQXR0cmlidXRlKGFbMF0ubmFtZSk7CiAgfQp9KTsK"></script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<link rel="stylesheet" href="data:text/css,body%20%7B%0Abackground%2Dcolor%3A%20%23fff%3B%0Amargin%3A%201em%20auto%3B%0Amax%2Dwidth%3A%20700px%3B%0Aoverflow%3A%20visible%3B%0Apadding%2Dleft%3A%202em%3B%0Apadding%2Dright%3A%202em%3B%0Afont%2Dfamily%3A%20%22Open%20Sans%22%2C%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20Arial%2C%20sans%2Dserif%3B%0Afont%2Dsize%3A%2014px%3B%0Aline%2Dheight%3A%201%2E35%3B%0A%7D%0A%23TOC%20%7B%0Aclear%3A%20both%3B%0Amargin%3A%200%200%2010px%2010px%3B%0Apadding%3A%204px%3B%0Awidth%3A%20400px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Aborder%2Dradius%3A%205px%3B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Afont%2Dsize%3A%2013px%3B%0Aline%2Dheight%3A%201%2E3%3B%0A%7D%0A%23TOC%20%2Etoctitle%20%7B%0Afont%2Dweight%3A%20bold%3B%0Afont%2Dsize%3A%2015px%3B%0Amargin%2Dleft%3A%205px%3B%0A%7D%0A%23TOC%20ul%20%7B%0Apadding%2Dleft%3A%2040px%3B%0Amargin%2Dleft%3A%20%2D1%2E5em%3B%0Amargin%2Dtop%3A%205px%3B%0Amargin%2Dbottom%3A%205px%3B%0A%7D%0A%23TOC%20ul%20ul%20%7B%0Amargin%2Dleft%3A%20%2D2em%3B%0A%7D%0A%23TOC%20li%20%7B%0Aline%2Dheight%3A%2016px%3B%0A%7D%0Atable%20%7B%0Amargin%3A%201em%20auto%3B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dcolor%3A%20%23DDDDDD%3B%0Aborder%2Dstyle%3A%20outset%3B%0Aborder%2Dcollapse%3A%20collapse%3B%0A%7D%0Atable%20th%20%7B%0Aborder%2Dwidth%3A%202px%3B%0Apadding%3A%205px%3B%0Aborder%2Dstyle%3A%20inset%3B%0A%7D%0Atable%20td%20%7B%0Aborder%2Dwidth%3A%201px%3B%0Aborder%2Dstyle%3A%20inset%3B%0Aline%2Dheight%3A%2018px%3B%0Apadding%3A%205px%205px%3B%0A%7D%0Atable%2C%20table%20th%2C%20table%20td%20%7B%0Aborder%2Dleft%2Dstyle%3A%20none%3B%0Aborder%2Dright%2Dstyle%3A%20none%3B%0A%7D%0Atable%20thead%2C%20table%20tr%2Eeven%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Ap%20%7B%0Amargin%3A%200%2E5em%200%3B%0A%7D%0Ablockquote%20%7B%0Abackground%2Dcolor%3A%20%23f6f6f6%3B%0Apadding%3A%200%2E25em%200%2E75em%3B%0A%7D%0Ahr%20%7B%0Aborder%2Dstyle%3A%20solid%3B%0Aborder%3A%20none%3B%0Aborder%2Dtop%3A%201px%20solid%20%23777%3B%0Amargin%3A%2028px%200%3B%0A%7D%0Adl%20%7B%0Amargin%2Dleft%3A%200%3B%0A%7D%0Adl%20dd%20%7B%0Amargin%2Dbottom%3A%2013px%3B%0Amargin%2Dleft%3A%2013px%3B%0A%7D%0Adl%20dt%20%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Aul%20%7B%0Amargin%2Dtop%3A%200%3B%0A%7D%0Aul%20li%20%7B%0Alist%2Dstyle%3A%20circle%20outside%3B%0A%7D%0Aul%20ul%20%7B%0Amargin%2Dbottom%3A%200%3B%0A%7D%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0Aborder%2Dradius%3A%203px%3B%0Acolor%3A%20%23333%3B%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0A%7D%0Apre%20%7B%0Aborder%2Dradius%3A%203px%3B%0Amargin%3A%205px%200px%2010px%200px%3B%0Apadding%3A%2010px%3B%0A%7D%0Apre%3Anot%28%5Bclass%5D%29%20%7B%0Abackground%2Dcolor%3A%20%23f7f7f7%3B%0A%7D%0Acode%20%7B%0Afont%2Dfamily%3A%20Consolas%2C%20Monaco%2C%20%27Courier%20New%27%2C%20monospace%3B%0Afont%2Dsize%3A%2085%25%3B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%7B%0Apadding%3A%202px%200px%3B%0A%7D%0Adiv%2Efigure%20%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0Aimg%20%7B%0Abackground%2Dcolor%3A%20%23FFFFFF%3B%0Apadding%3A%202px%3B%0Aborder%3A%201px%20solid%20%23DDDDDD%3B%0Aborder%2Dradius%3A%203px%3B%0Aborder%3A%201px%20solid%20%23CCCCCC%3B%0Amargin%3A%200%205px%3B%0A%7D%0Ah1%20%7B%0Amargin%2Dtop%3A%200%3B%0Afont%2Dsize%3A%2035px%3B%0Aline%2Dheight%3A%2040px%3B%0A%7D%0Ah2%20%7B%0Aborder%2Dbottom%3A%204px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Apadding%2Dbottom%3A%202px%3B%0Afont%2Dsize%3A%20145%25%3B%0A%7D%0Ah3%20%7B%0Aborder%2Dbottom%3A%202px%20solid%20%23f7f7f7%3B%0Apadding%2Dtop%3A%2010px%3B%0Afont%2Dsize%3A%20120%25%3B%0A%7D%0Ah4%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23f7f7f7%3B%0Amargin%2Dleft%3A%208px%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Ah5%2C%20h6%20%7B%0Aborder%2Dbottom%3A%201px%20solid%20%23ccc%3B%0Afont%2Dsize%3A%20105%25%3B%0A%7D%0Aa%20%7B%0Acolor%3A%20%230033dd%3B%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0Aa%3Ahover%20%7B%0Acolor%3A%20%236666ff%3B%20%7D%0Aa%3Avisited%20%7B%0Acolor%3A%20%23800080%3B%20%7D%0Aa%3Avisited%3Ahover%20%7B%0Acolor%3A%20%23BB00BB%3B%20%7D%0Aa%5Bhref%5E%3D%22http%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0Aa%5Bhref%5E%3D%22https%3A%22%5D%20%7B%0Atext%2Ddecoration%3A%20underline%3B%20%7D%0A%0Acode%20%3E%20span%2Ekw%20%7B%20color%3A%20%23555%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Edt%20%7B%20color%3A%20%23902000%3B%20%7D%20%0Acode%20%3E%20span%2Edv%20%7B%20color%3A%20%2340a070%3B%20%7D%20%0Acode%20%3E%20span%2Ebn%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Efl%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Ech%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Est%20%7B%20color%3A%20%23d14%3B%20%7D%20%0Acode%20%3E%20span%2Eco%20%7B%20color%3A%20%23888888%3B%20font%2Dstyle%3A%20italic%3B%20%7D%20%0Acode%20%3E%20span%2Eot%20%7B%20color%3A%20%23007020%3B%20%7D%20%0Acode%20%3E%20span%2Eal%20%7B%20color%3A%20%23ff0000%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Efu%20%7B%20color%3A%20%23900%3B%20font%2Dweight%3A%20bold%3B%20%7D%20%0Acode%20%3E%20span%2Eer%20%7B%20color%3A%20%23a61717%3B%20background%2Dcolor%3A%20%23e3d2d2%3B%20%7D%20%0A" type="text/css" />
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Calculating Running Elo Updates</h1>
+<h4 class="author">Ethan Heinzen</h4>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#the-elo.run-function">The <code>elo.run()</code> function</a>
+<ul>
+<li><a href="#with-two-variable-elos">With two variable Elos</a></li>
+<li><a href="#with-a-fixed-elo-opponent">With a fixed-Elo opponent</a></li>
+<li><a href="#regress-elos-back-to-the-mean">Regress Elos back to the mean</a></li>
+<li><a href="#group-matches">Group matches</a></li>
+</ul></li>
+<li><a href="#elo.run.multiteam"><code>elo.run.multiteam()</code></a></li>
+<li><a href="#helper-functions">Helper functions</a></li>
+<li><a href="#making-predictions">Making Predictions</a></li>
+<li><a href="#advanced-custom-probability-and-updates">Advanced: custom probability and updates</a></li>
+<li><a href="#final-thoughts">Final Thoughts</a></li>
+</ul>
+</div>
+
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(elo)</span></code></pre></div>
+<div id="the-elo.run-function" class="section level1">
+<h1>The <code>elo.run()</code> function</h1>
+<p>It is useful to allow Elos to update as matches occur. We refer to this as “running” Elo scores.</p>
+<div id="with-two-variable-elos" class="section level2">
+<h2>With two variable Elos</h2>
+<p>To calculate a series of Elo updates, use <code>elo.run()</code>. This function has a <code>formula =</code> and <code>data =</code> interface. We first load the dataset <code>tournament</code>.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(tournament)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tournament)</span></code></pre></div>
+<pre><code>## &#39;data.frame&#39;:    56 obs. of  6 variables:
+##  $ team.Home     : chr  &quot;Blundering Baboons&quot; &quot;Defense-less Dogs&quot; &quot;Fabulous Frogs&quot; &quot;Helpless Hyenas&quot; ...
+##  $ team.Visitor  : chr  &quot;Athletic Armadillos&quot; &quot;Cunning Cats&quot; &quot;Elegant Emus&quot; &quot;Gallivanting Gorillas&quot; ...
+##  $ points.Home   : num  14 21 15 13 22 18 20 23 25 23 ...
+##  $ points.Visitor: num  22 18 11 15 13 20 22 10 16 18 ...
+##  $ week          : num  1 1 1 1 2 2 2 2 3 3 ...
+##  $ half          : chr  &quot;First Half of Season&quot; &quot;First Half of Season&quot; &quot;First Half of Season&quot; &quot;First Half of Season&quot; ...</code></pre>
+<p><code>formula =</code> should be in the format of <code>wins.A ~ team.A + team.B</code>. The <code>score()</code> function will help to calculate winners on the fly (1 = win, 0.5 = tie, 0 = loss).</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>tournament<span class="sc">$</span>wins.A <span class="ot">&lt;-</span> tournament<span class="sc">$</span>points.Home <span class="sc">&gt;</span> tournament<span class="sc">$</span>points.Visitor</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(wins.A <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor, <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># on the fly</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor, <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+<p>For more complicated Elo updates, you can include the special function <code>k()</code> in the <code>formula =</code> argument. Here we’re taking the log of the win margin as part of our update.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor <span class="sc">+</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>        <span class="fu">k</span>(<span class="dv">20</span><span class="sc">*</span><span class="fu">log</span>(<span class="fu">abs</span>(points.Home <span class="sc">-</span> points.Visitor) <span class="sc">+</span> <span class="dv">1</span>)), <span class="at">data =</span> tournament)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+<p>You can also adjust the home and visitor teams with different k’s (but note that this no longer conserves total Elo score!):</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>k1 <span class="ot">&lt;-</span> <span class="dv">20</span><span class="sc">*</span><span class="fu">log</span>(<span class="fu">abs</span>(tournament<span class="sc">$</span>points.Home <span class="sc">-</span> tournament<span class="sc">$</span>points.Visitor) <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor <span class="sc">+</span> <span class="fu">k</span>(k1, k1<span class="sc">/</span><span class="dv">2</span>), <span class="at">data =</span> tournament)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+<p>It’s also possible to adjust one team’s Elo for a variety of factors (e.g., home-field advantage). The <code>adjust()</code> special function will take as its second argument a vector or a constant.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> <span class="fu">adjust</span>(team.Home, <span class="dv">10</span>) <span class="sc">+</span> team.Visitor,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+</div>
+<div id="with-a-fixed-elo-opponent" class="section level2">
+<h2>With a fixed-Elo opponent</h2>
+<p><code>elo.run()</code> also recognizes if the second column is numeric, and interprets that as a fixed-Elo opponent.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>tournament<span class="sc">$</span>elo.Visitor <span class="ot">&lt;-</span> <span class="dv">1500</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> elo.Visitor,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run&#39;, containing information on 8 teams and 56 matches.</code></pre>
+<p>Why would you want to do this? One instance might be when a person plays against a computer whose Elo score is known (or estimated).</p>
+</div>
+<div id="regress-elos-back-to-the-mean" class="section level2">
+<h2>Regress Elos back to the mean</h2>
+<p>The special function <code>regress()</code> can be used to regress Elos back to a fixed value after certain matches. Giving a logical vector identifies these matches after which to regress back to the mean. Giving any other kind of vector regresses after the appropriate groupings (e.g., <code>duplicated(..., fromLast = TRUE)</code>). The other three arguments determine what Elo to regress to (<code>to =</code>, which could be a different value for different teams), by how much to regress toward that value (<code>by =</code>), and whether to regress teams which aren’t actively playing (<code>regress.unused =</code>). Note here again that total Elo score might not be conserved.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>tournament<span class="sc">$</span>elo.Visitor <span class="ot">&lt;-</span> <span class="dv">1500</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> elo.Visitor <span class="sc">+</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>        <span class="fu">regress</span>(half, <span class="dv">1500</span>, <span class="fl">0.2</span>),</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;elo.run.regressed&#39;, containing information on 8 teams and 56 matches, with 2 regressions.</code></pre>
+</div>
+<div id="group-matches" class="section level2">
+<h2>Group matches</h2>
+<p>The special function <code>group()</code> tells <code>elo.run()</code> when to update Elos. It also determines matches to group together in <code>as.matrix()</code>.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>er <span class="ot">&lt;-</span> <span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor <span class="sc">+</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                <span class="fu">group</span>(week),</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>              <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">as.matrix</span>(er)</span></code></pre></div>
+<pre><code>##       Athletic Armadillos Blundering Baboons Cunning Cats Defense-less Dogs
+##  [1,]            1510.000           1490.000     1490.000          1510.000
+##  [2,]            1499.425           1500.575     1500.575          1499.425
+##  [3,]            1489.425           1490.575     1510.575          1509.425
+##  [4,]            1499.458           1480.542     1520.542          1499.458
+##  [5,]            1489.458           1470.542     1520.542          1489.458
+##  [6,]            1490.033           1461.971     1509.681          1480.033
+##  [7,]            1501.153           1453.313     1499.945          1470.647
+##  [8,]            1509.785           1444.682     1509.104          1461.489
+##  [9,]            1519.765           1455.165     1499.124          1451.005
+## [10,]            1527.812           1446.423     1507.865          1442.959
+## [11,]            1537.372           1458.979     1508.123          1434.819
+## [12,]            1547.007           1450.239     1518.364          1437.130
+## [13,]            1556.067           1461.837     1528.173          1429.335
+## [14,]            1564.318           1453.079     1518.019          1421.394
+##       Elegant Emus Fabulous Frogs Gallivanting Gorillas Helpless Hyenas
+##  [1,]     1490.000       1510.000              1510.000        1490.000
+##  [2,]     1500.575       1499.425              1499.425        1500.575
+##  [3,]     1490.575       1489.425              1509.425        1510.575
+##  [4,]     1480.542       1499.458              1499.458        1520.542
+##  [5,]     1490.542       1509.458              1509.458        1520.542
+##  [6,]     1501.403       1518.883              1508.883        1529.113
+##  [7,]     1510.789       1528.618              1517.541        1517.993
+##  [8,]     1501.302       1538.106              1527.554        1507.980
+##  [9,]     1502.056       1527.241              1526.800        1518.844
+## [10,]     1512.539       1537.228              1516.813        1508.362
+## [11,]     1502.978       1524.672              1516.555        1516.501
+## [12,]     1511.718       1515.038              1514.245        1506.260
+## [13,]     1501.910       1522.832              1505.185        1494.661
+## [14,]     1509.851       1532.986              1513.944        1486.411</code></pre>
+<p>This can be useful in situations when using the Elo framework for games which aren’t explicitly head-to-head (e.g., golf, swimming). For those situations, the person who won can be considered as having beaten (head-to-head) every other person. The person who came in second “beat” everyone but the first. However, we wouldn’t want to update Elos after every “head-to-head”; rather, they should all be considered together in updating Elo.</p>
+<p>An example might help clarify. Suppose participants 1-3 go head-to-head in a game, with participant 2 coming in first, participant 1 coming in second, and participant 3 coming in last. Then we might have a dataset like</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">team1 =</span> <span class="fu">c</span>(<span class="st">&quot;Part 2&quot;</span>, <span class="st">&quot;Part 2&quot;</span>, <span class="st">&quot;Part 1&quot;</span>),</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">team2 =</span> <span class="fu">c</span>(<span class="st">&quot;Part 1&quot;</span>, <span class="st">&quot;Part 3&quot;</span>, <span class="st">&quot;Part 3&quot;</span>),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">won =</span> <span class="dv">1</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>d</span></code></pre></div>
+<pre><code>##    team1  team2 won
+## 1 Part 2 Part 1   1
+## 2 Part 2 Part 3   1
+## 3 Part 1 Part 3   1</code></pre>
+<p>We would want to consider all three of these matches at the same time, so we add a grouping variable and run <code>elo.run()</code>:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>d<span class="sc">$</span>group <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(<span class="fu">elo.run</span>(won <span class="sc">~</span> team1 <span class="sc">+</span> team2 <span class="sc">+</span> <span class="fu">group</span>(group), <span class="at">data =</span> d, <span class="at">k =</span> <span class="dv">20</span>))</span></code></pre></div>
+<pre><code>## Part 1 Part 2 Part 3 
+##   1500   1520   1480</code></pre>
+</div>
+</div>
+<div id="elo.run.multiteam" class="section level1">
+<h1><code>elo.run.multiteam()</code></h1>
+<p>The situation described immediately above (multiple teams instead of pairwise head-to-head) has a shortcut implemented: <code>elo.run.multiteam()</code>. The helper function <code>multiteam()</code> takes vectors of first-place teams (first column), second place teams (second column), etc., and does the heavy lifting of data manipulation for you. Note that this runs <code>elo.run()</code> in the background, but is less flexible than <code>elo.run()</code> because (1) there cannot be ties; (2) it does not accept adjustments; and (3) k-values are constant for each “game” (sets of head-to-head matchups).</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>d2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">first =</span> <span class="st">&quot;Part 2&quot;</span>,</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">second =</span> <span class="st">&quot;Part 1&quot;</span>,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">third =</span> <span class="st">&quot;Part 3&quot;</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(<span class="fu">elo.run.multiteam</span>(<span class="sc">~</span> <span class="fu">multiteam</span>(first, second, third), <span class="at">k =</span> <span class="dv">20</span>, <span class="at">data =</span> d2))</span></code></pre></div>
+<pre><code>## Part 1 Part 2 Part 3 
+##   1500   1520   1480</code></pre>
+<p>A larger example shows the utility of this function:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;tournament.multiteam&quot;</span>)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(tournament.multiteam)</span></code></pre></div>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    28 obs. of  6 variables:
+##  $ week   : num  1 1 2 2 3 3 4 4 5 5 ...
+##  $ half   : chr  &quot;First Half of Season&quot; &quot;First Half of Season&quot; &quot;First Half of Season&quot; &quot;First Half of Season&quot; ...
+##  $ Place_1: chr  &quot;Defense-less Dogs&quot; &quot;Athletic Armadillos&quot; &quot;Helpless Hyenas&quot; &quot;Elegant Emus&quot; ...
+##  $ Place_2: chr  &quot;Fabulous Frogs&quot; &quot;Cunning Cats&quot; &quot;Cunning Cats&quot; &quot;Blundering Baboons&quot; ...
+##  $ Place_3: chr  &quot;Blundering Baboons&quot; &quot;Gallivanting Gorillas&quot; &quot;Gallivanting Gorillas&quot; &quot;Athletic Armadillos&quot; ...
+##  $ Place_4: chr  &quot;Helpless Hyenas&quot; &quot;Elegant Emus&quot; &quot;Defense-less Dogs&quot; &quot;Fabulous Frogs&quot; ...</code></pre>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>erm <span class="ot">&lt;-</span> <span class="fu">elo.run.multiteam</span>(<span class="sc">~</span> <span class="fu">multiteam</span>(Place_1, Place_2, Place_3, Place_4),</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>                         <span class="at">data =</span> tournament.multiteam, <span class="at">k =</span> <span class="dv">20</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(erm)</span></code></pre></div>
+<pre><code>##   Athletic Armadillos    Blundering Baboons          Cunning Cats 
+##              1672.333              1439.738              1559.373 
+##     Defense-less Dogs          Elegant Emus        Fabulous Frogs 
+##              1336.748              1449.914              1524.204 
+## Gallivanting Gorillas       Helpless Hyenas 
+##              1517.780              1499.910</code></pre>
+</div>
+<div id="helper-functions" class="section level1">
+<h1>Helper functions</h1>
+<p>There are several helper functions that are useful to use when interacting with objects of class <code>&quot;elo.run&quot;</code>.</p>
+<p><code>summary.elo.run()</code> reports some summary statistics.</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>e <span class="ot">&lt;-</span> <span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> team.Home <span class="sc">+</span> team.Visitor,</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(e)</span></code></pre></div>
+<pre><code>## 
+## An object of class &#39;summary.elo.run&#39;, containing information on 8 teams and 56 matches.
+## 
+## Mean Square Error: 0.2195
+## AUC: 0.6304
+## Favored Teams vs. Actual Wins: 
+##        Actual
+## Favored  0 0.5  1
+##   TRUE   6   1 16
+##   (tie)  2   1  9
+##   FALSE  8   3 10</code></pre>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rank.teams</span>(e)</span></code></pre></div>
+<pre><code>##   Athletic Armadillos    Blundering Baboons          Cunning Cats 
+##                     1                     7                     3 
+##     Defense-less Dogs          Elegant Emus        Fabulous Frogs 
+##                     8                     5                     2 
+## Gallivanting Gorillas       Helpless Hyenas 
+##                     4                     6</code></pre>
+<p><code>as.matrix.elo.run()</code> creates a matrix of running Elos.</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(<span class="fu">as.matrix</span>(e))</span></code></pre></div>
+<pre><code>##      Athletic Armadillos Blundering Baboons Cunning Cats Defense-less Dogs
+## [1,]            1510.000           1490.000     1500.000          1500.000
+## [2,]            1510.000           1490.000     1490.000          1510.000
+## [3,]            1510.000           1490.000     1490.000          1510.000
+## [4,]            1510.000           1490.000     1490.000          1510.000
+## [5,]            1499.425           1490.000     1500.575          1510.000
+## [6,]            1499.425           1500.575     1500.575          1499.425
+##      Elegant Emus Fabulous Frogs Gallivanting Gorillas Helpless Hyenas
+## [1,]         1500           1500                  1500            1500
+## [2,]         1500           1500                  1500            1500
+## [3,]         1490           1510                  1500            1500
+## [4,]         1490           1510                  1510            1490
+## [5,]         1490           1510                  1510            1490
+## [6,]         1490           1510                  1510            1490</code></pre>
+<p><code>as.data.frame.elo.run()</code> gives the long version (perfect, for, e.g., <code>ggplot2</code>).</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(<span class="fu">as.data.frame</span>(e))</span></code></pre></div>
+<pre><code>## &#39;data.frame&#39;:    56 obs. of  8 variables:
+##  $ team.A  : Factor w/ 8 levels &quot;Athletic Armadillos&quot;,..: 2 4 6 8 3 4 7 8 4 3 ...
+##  $ team.B  : Factor w/ 8 levels &quot;Athletic Armadillos&quot;,..: 1 3 5 7 1 2 5 6 1 2 ...
+##  $ p.A     : num  0.5 0.5 0.5 0.5 0.471 ...
+##  $ wins.A  : num  0 1 1 0 1 0 0 1 1 1 ...
+##  $ update.A: num  -10 10 10 -10 10.6 ...
+##  $ update.B: num  10 -10 -10 10 -10.6 ...
+##  $ elo.A   : num  1490 1510 1510 1490 1501 ...
+##  $ elo.B   : num  1510 1490 1490 1510 1499 ...</code></pre>
+<p>Finally, <code>final.elos()</code> will extract the final Elos per team.</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(e)</span></code></pre></div>
+<pre><code>##   Athletic Armadillos    Blundering Baboons          Cunning Cats 
+##              1564.318              1453.079              1518.019 
+##     Defense-less Dogs          Elegant Emus        Fabulous Frogs 
+##              1421.394              1509.851              1532.986 
+## Gallivanting Gorillas       Helpless Hyenas 
+##              1513.944              1486.411</code></pre>
+</div>
+<div id="making-predictions" class="section level1">
+<h1>Making Predictions</h1>
+<p>It is also possible to use the Elos calculated by <code>elo.run()</code> to make predictions on future match-ups.</p>
+<div class="sourceCode" id="cb40"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> <span class="fu">adjust</span>(team.Home, <span class="dv">10</span>) <span class="sc">+</span> team.Visitor,</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>                   <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>newdat <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">team.Home =</span> <span class="st">&quot;Athletic Armadillos&quot;</span>,</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">team.Visitor =</span> <span class="st">&quot;Blundering Baboons&quot;</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(results, <span class="at">newdata =</span> newdat)</span></code></pre></div>
+<pre><code>## [1] 0.6676045</code></pre>
+</div>
+<div id="advanced-custom-probability-and-updates" class="section level1">
+<h1>Advanced: custom probability and updates</h1>
+<p>We now get to <code>elo.run()</code> when custom probability calculations and Elo updates are needed. Note that these use cases are coded in R instead of C++ and may run as much as 50x slower than the default.</p>
+<p>For instance, suppose you want to change the adjustment based on team A’s current Elo:</p>
+<div class="sourceCode" id="cb42"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>custom_update <span class="ot">&lt;-</span> <span class="cf">function</span>(wins.A, elo.A, elo.B, k, adjust.A, adjust.B, ...)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  k<span class="sc">*</span>(wins.A <span class="sc">-</span> <span class="fu">elo.prob</span>(elo.A, elo.B, <span class="at">adjust.B =</span> adjust.B,</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">adjust.A =</span> <span class="fu">ifelse</span>(elo.A <span class="sc">&gt;</span> <span class="dv">1500</span>, adjust.A <span class="sc">/</span> <span class="dv">2</span>, adjust.A)))</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>custom_prob <span class="ot">&lt;-</span> <span class="cf">function</span>(elo.A, elo.B, adjust.A, adjust.B)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>  <span class="dv">1</span><span class="sc">/</span>(<span class="dv">1</span> <span class="sc">+</span> <span class="dv">10</span><span class="sc">^</span>(((elo.B <span class="sc">+</span> adjust.B) <span class="sc">-</span> (elo.A <span class="sc">+</span> <span class="fu">ifelse</span>(elo.A <span class="sc">&gt;</span> <span class="dv">1500</span>, adjust.A <span class="sc">/</span> <span class="dv">2</span>, adjust.A)))<span class="sc">/</span><span class="fl">400.0</span>))</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>er2 <span class="ot">&lt;-</span> <span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> <span class="fu">adjust</span>(team.Home, <span class="dv">10</span>) <span class="sc">+</span> team.Visitor,</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>               <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>, <span class="at">prob.fun =</span> custom_prob, <span class="at">update.fun =</span> custom_update)</span></code></pre></div>
+<pre><code>## Using R instead of C++</code></pre>
+<div class="sourceCode" id="cb44"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(er2)</span></code></pre></div>
+<pre><code>##   Athletic Armadillos    Blundering Baboons          Cunning Cats 
+##              1564.660              1452.278              1518.165 
+##     Defense-less Dogs          Elegant Emus        Fabulous Frogs 
+##              1420.876              1510.015              1533.209 
+## Gallivanting Gorillas       Helpless Hyenas 
+##              1514.233              1486.564</code></pre>
+<p>Compare this to the results from the default:</p>
+<div class="sourceCode" id="cb46"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>er3 <span class="ot">&lt;-</span> <span class="fu">elo.run</span>(<span class="fu">score</span>(points.Home, points.Visitor) <span class="sc">~</span> <span class="fu">adjust</span>(team.Home, <span class="dv">10</span>) <span class="sc">+</span> team.Visitor,</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">data =</span> tournament, <span class="at">k =</span> <span class="dv">20</span>)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="fu">final.elos</span>(er3)</span></code></pre></div>
+<pre><code>##   Athletic Armadillos    Blundering Baboons          Cunning Cats 
+##              1563.967              1452.822              1517.847 
+##     Defense-less Dogs          Elegant Emus        Fabulous Frogs 
+##              1421.358              1509.906              1533.127 
+## Gallivanting Gorillas       Helpless Hyenas 
+##              1514.205              1486.768</code></pre>
+<p>This example is a bit contrived, as it’d be easier just to use <code>adjust()</code> (actually, this is tested for in the tests), but the point remains.</p>
+<p>Why would you want this? Consider <a href="https://fivethirtyeight.com/methodology/how-our-nfl-predictions-work/">fivethirtyeight’s NFL Elo model</a>, which uses a custom Elo update.</p>
+</div>
+<div id="final-thoughts" class="section level1">
+<h1>Final Thoughts</h1>
+<p>Elo is great, but is it the best ranking/rating system? The third vignette discusses alternatives implemented in the <code>elo</code> package.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

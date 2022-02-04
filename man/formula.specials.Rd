@@ -2,6 +2,7 @@
 % Please edit documentation in R/elo.players.R, R/formula.specials.R
 \name{players}
 \alias{players}
+\alias{multiteam}
 \alias{formula.specials}
 \alias{k}
 \alias{adjust}
@@ -11,6 +12,8 @@
 \title{Details on \code{elo} formulas and the specials therein}
 \usage{
 players(..., weights = NULL)
+
+multiteam(...)
 
 k(x, y = NULL)
 
@@ -73,7 +76,8 @@ In the functions in this package, \code{formula} is usually of the form \code{wi
   (\code{by = }), and whether to continue regressing teams which have stopped playing (\code{regress.unused},
   default = \code{TRUE}).
 
-\code{group()} is used to group matches (by, e.g., week). It is fed to \code{\link{as.matrix.elo.run}}
+\code{group()} is used to group matches (by, e.g., week). For \code{\link{elo.run}}, Elos are not updated until
+  the group changes. It is also fed to \code{\link{as.matrix.elo.run}}, giving the number of rows to return.
   to produce only certain rows of matrix output. It also determines how many models to run (and on what data)
   for \code{\link{elo.glm}} and \code{\link{elo.markovchain}} when \code{running=TRUE}.
 
@@ -84,4 +88,6 @@ In the functions in this package, \code{formula} is usually of the form \code{wi
 
 \code{players()} is used for multiple players on a team contributing to an overall Elo. The Elo updates
   are then assigned based on the specified weights. The weights are ignored in \code{\link{elo.glm}}.
+
+\code{multiteam()} is used for matchups consisting of multiple teams and is only valid in \code{\link{elo.run.multiteam}}.
 }

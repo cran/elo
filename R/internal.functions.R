@@ -24,19 +24,23 @@ check_elo_run_vars <- function(mf, initial.elos = NULL)
   }
 
   all.teams <- sort(unique(all.teams))
+  tmp <- stats::setNames(seq_along(all.teams) - 1L, all.teams)
+  t1 <- matrix(tmp[t1], nrow = nrow(t1))
+  if(flag != 2) t2 <- matrix(tmp[t2], nrow = nrow(t2))
+
   initial.elos <- check_named_elos(initial.elos, all.teams)
 
   regress <- check_group_regress(mf$regress)
   to <- check_named_elos(attr(mf$regress, "to"), all.teams)
 
-  tmp <- stats::setNames(seq_along(initial.elos) - 1L, names(initial.elos))
-  t1 <- matrix(tmp[t1], nrow = nrow(t1))
-  if(flag != 2) t2 <- matrix(tmp[t2], nrow = nrow(t2))
+  group <- check_group_regress(mf$group, gt.zero = TRUE)
+  if(any(regress & !group)) stop("You can't regress mid-group")
 
   list(winsA = mf$wins.A, teamA = t1, teamB = t2, weightsA = wts1, weightsB = wts2,
        k = mf$k, adjTeamA = mf$adj.A, adjTeamB = mf$adj.B, regress = regress,
        to = to, by = attr(mf$regress, "by"),
        regressUnused = attr(mf$regress, "regress.unused"),
+       group = group,
        initialElos = initial.elos, flag = flag)
 }
 
@@ -156,8 +160,8 @@ check_elo_markovchain_vars <- function(mf)
   tmp <- stats::setNames(seq_along(all.teams) - 1L, all.teams)
   wts1 <- weights(t1)
   wts2 <- weights(t2)
-  t1 <- matrix(tmp[t1], nrow = nrow(t1))
-  t2 <- matrix(tmp[t2], nrow = nrow(t2))
+  t1 <- matrix(tmp[as.matrix(t1)], nrow = nrow(t1))
+  t2 <- matrix(tmp[as.matrix(t2)], nrow = nrow(t2))
 
   if(!all(mf$weights > 0)) stop("Weights should be positive numbers")
 
@@ -173,7 +177,8 @@ group_to_int <- function(grp, skip)
   grp2 <- rev(cumsum(rev(grp2)))
   mx <- max(grp2)
   if(skip > mx || skip < 0) stop("skip must be between 0 and ", mx, " (inclusive)")
-  mx + 1 - grp2 # from mx : 1 to 1 : mx
+  out <- mx + 1 - grp2 # from mx : 1 to 1 : mx
+  replace(out, out <= skip, 0)
 }
 
 
@@ -194,8 +199,8 @@ check_elo_winpct_vars <- function(mf)
   tmp <- stats::setNames(seq_along(all.teams) - 1L, all.teams)
   wts1 <- weights(t1)
   wts2 <- weights(t2)
-  t1 <- matrix(tmp[t1], nrow = nrow(t1))
-  t2 <- matrix(tmp[t2], nrow = nrow(t2))
+  t1 <- matrix(tmp[as.matrix(t1)], nrow = nrow(t1))
+  t2 <- matrix(tmp[as.matrix(t2)], nrow = nrow(t2))
 
   if(!all(mf$weights > 0)) stop("Weights should be positive numbers")
 
@@ -210,3 +215,13 @@ mean_vec_subset_matrix <- function(vec, mat)
 {
   rowMeans(matrix(vec[mat], nrow = nrow(mat)))
 }
+
+mult_valid_coef <- function(x, coeff, valid) {
+  if(any(x[!valid] != 0)) NA_real_ else sum(x * coeff, na.rm = TRUE)
+}
+
+mult_na_coef <- function(x, coeff) {
+  if(anyNA(x)) NA_real_ else sum(x * coeff, na.rm = TRUE)
+}
+
+
